@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Concrete Cube Test Certificate Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<style>
+  :root{
+    --ink:#1c2430; --muted:#5b6472; --line:#d8dde3; --bg:#f5f6f8;
+    --accent:#2a5d8f; --accent-light:#eaf1f8; --danger:#b3392c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family: "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--ink);
+    margin:0; padding:24px;
+  }
+  .wrap{ max-width:920px; margin:0 auto; }
+  h1{ font-size:1.4rem; margin-bottom:2px; }
+  .subtitle{ color:var(--muted); margin-top:0; margin-bottom:20px; font-size:.9rem; }
+  .site-nav{ font-size:.85rem; margin-bottom:14px; }
+  .site-nav a{ color:var(--accent); text-decoration:none; margin-right:14px; }
+  .site-nav a.current{ color:var(--ink); font-weight:600; text-decoration:none; cursor:default; }
+  .site-nav a:hover{ text-decoration:underline; }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .card h2{ font-size:1rem; margin:0 0 12px 0; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:8px;}
+  .row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px; }
+  .field{ flex:1 1 180px; display:flex; flex-direction:column; gap:4px; }
+  .field.narrow{ flex:0 0 90px; }
+  label{ font-size:.78rem; color:var(--muted); font-weight:600; }
+  input, select, textarea{
+    padding:7px 8px; border:1px solid var(--line); border-radius:5px; font-size:.9rem;
+    font-family:inherit; width:100%;
+  }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent-light); border-color:var(--accent); }
+  .hint{ font-size:.72rem; color:var(--muted); margin-top:2px; }
+  .preview-box{
+    background:var(--accent-light); border:1px solid var(--accent); border-radius:5px;
+    padding:8px 10px; font-family:monospace; font-size:.95rem; margin-top:6px;
+  }
+  table.specimen{ width:100%; border-collapse:collapse; margin-top:6px; }
+  table.specimen th, table.specimen td{
+    border:1px solid var(--line); padding:6px 8px; font-size:.85rem; text-align:center;
+  }
+  table.specimen th{ background:#f0f2f5; font-weight:600; font-size:.75rem; }
+  table.specimen input, table.specimen select{ text-align:center; padding:5px; }
+  table.specimen td.calc{ background:#fbfcfd; font-weight:600; color:var(--accent); }
+  .remove-specimen-btn{ padding:3px 8px; font-size:.8rem; border-color:var(--danger); color:var(--danger); }
+  .checkbox-row{ display:flex; gap:20px; flex-wrap:wrap; margin-bottom:6px; }
+  .checkbox-row label{ display:flex; align-items:center; gap:6px; font-size:.88rem; color:var(--ink); font-weight:400; }
+  .checkbox-row input[type="checkbox"]{ width:auto; }
+  #addressSearchWrap{ position:relative; }
+  #addressResults{
+    position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--line);
+    border-top:none; max-height:220px; overflow-y:auto; z-index:20; border-radius:0 0 6px 6px;
+    box-shadow:0 6px 12px rgba(0,0,0,.08);
+  }
+  .addr-option{ padding:8px 10px; cursor:pointer; font-size:.85rem; white-space:pre-line; border-bottom:1px solid var(--line); }
+  .addr-option:hover{ background:var(--accent-light); }
+  .addr-option .id{ color:var(--muted); font-size:.72rem; display:block; margin-bottom:2px; }
+  #selectedAddress{
+    white-space:pre-line; background:var(--accent-light); border:1px solid var(--accent);
+    border-radius:5px; padding:8px 10px; font-size:.85rem; margin-top:8px; display:none;
+  }
+  #selectedAddress button{ float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:.8rem; }
+  .add-address-form{ display:none; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+  .add-address-form textarea{ min-height:80px; }
+  button{
+    background:var(--accent); color:#fff; border:none; border-radius:6px; padding:9px 16px;
+    font-size:.88rem; cursor:pointer; font-weight:600;
+  }
+  button.secondary{ background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  #generateBtn{ font-size:1rem; padding:12px 22px; }
+  #statusMsg{ margin-top:10px; font-size:.85rem; }
+  #statusMsg.error{ color:var(--danger); }
+  #statusMsg.ok{ color:#1c7a3e; }
+  .config-status{ font-size:.78rem; color:var(--muted); margin-bottom:8px; }
+  .config-status.bad{ color:var(--danger); }
+  .sig-row{ display:flex; gap:12px; align-items:flex-end; margin-bottom:10px; flex-wrap:wrap; }
+  .sig-row .field{ flex:1 1 220px; }
+  .sig-row .field.other-name{ flex:1 1 220px; }
+  .advanced-toggle-row{ text-align:center; margin:18px 0 6px; }
+  .advanced-toggle-btn{
+    background:none; border:none; color:var(--muted); font-size:.75rem; font-weight:400;
+    cursor:pointer; padding:4px 8px; text-decoration:underline; text-decoration-style:dotted;
+  }
+  .advanced-toggle-btn:hover{ color:var(--accent); }
+  .advanced-section .card{ border-style:dashed; }
+  .backup-result{
+    padding:8px 10px; border:1px solid var(--line); border-radius:5px; margin-top:6px;
+    font-size:.82rem; cursor:pointer;
+  }
+  .backup-result:hover{ background:var(--accent-light); }
+  .site-footer{
+    margin-top:28px; padding:16px 0 8px; border-top:1px solid var(--line);
+    text-align:center; font-size:.75rem; color:var(--muted);
+  }
+  .site-footer p{ margin:2px 0; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="site-nav">
+    <a href="index.html" class="current">Cube Test</a>
+    <a href="brick.html">Brick Test</a>
+  </div>
+  <h1>Compressive Strength of Concrete Cubes — Report Generator</h1>
+  <p class="subtitle">Fills a lab test certificate .docx from your data. Prints on existing letterhead — no header/footer is added.</p>
+
+  <div class="card">
+    <h2>Backend status</h2>
+    <div id="configStatus" class="config-status">Loading configuration from Google Sheet…</div>
+  </div>
+
+  <div class="card">
+    <h2>1. Report Number &amp; Date</h2>
+    <div id="lastSubmittedInfo" class="hint" style="margin-bottom:10px;">Loading last submitted report…</div>
+    <div class="row">
+      <div class="field narrow">
+        <label for="reportNum">Report No.</label>
+        <input type="text" id="reportNum" placeholder="e.g. 3" inputmode="numeric">
+      </div>
+      <div class="field narrow">
+        <label for="reportMonth">Month</label>
+        <select id="reportMonth"></select>
+      </div>
+      <div class="field narrow">
+        <label for="reportYear">Year</label>
+        <input type="number" id="reportYear" min="2000" max="2100">
+      </div>
+      <div class="field">
+        <label for="reportDate">Report Date</label>
+        <input type="date" id="reportDate">
+      </div>
+    </div>
+    <div class="hint">Composed report number:</div>
+    <div class="preview-box" id="reportNumPreview">—</div>
+    <div class="row" style="margin-top:10px;">
+      <div class="field narrow">
+        <label for="pageNumber">Result Page No.</label>
+        <input type="text" id="pageNumber" placeholder="e.g. 42 or 12-A">
+      </div>
+    </div>
+    <div class="hint">The page number where this result is recorded in your register — letters and hyphens allowed (e.g. "12-A"). Stored in the report log; not printed on the certificate itself.</div>
+  </div>
+
+  <div class="card">
+    <h2>2. Addressee ("To:")</h2>
+  </div>
+    <div class="card">
+    <h2>Addressee ("To:")</h2>
+    <div id="addressSearchWrap">
+      <label for="addressSearch">Search existing address book</label>
+      <input type="text" id="addressSearch" placeholder="Type a name, office, or ID…" autocomplete="off">
+      <div id="addressResults" style="display:none;"></div>
+    </div>
+    <div id="selectedAddress"></div>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="showAddAddressBtn">+ Add new address</button>
+    </div>
+    <div class="add-address-form" id="addAddressForm">
+      <label for="newAddressText">New address (multi-line, e.g. name / designation / office)</label>
+      <textarea id="newAddressText" placeholder="The Assistant Engineer&#10;LID&amp;EW Division&#10;PDY"></textarea>
+      <div class="toolbar">
+        <button type="button" id="saveAddressBtn">Save &amp; use</button>
+        <button type="button" class="secondary" id="cancelAddAddressBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <h2>3. References (leave blank for "Not Specified")</h2>
+    <div class="row">
+      <div class="field">
+        <label for="workDesc">Work Description</label>
+        <input type="text" id="workDesc" placeholder="e.g. SO 155/25-26 PDY Thottappalli Kalarikkal road concreting ward 18">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="aeLetterRef">AE Letter Reference</label>
+        <input type="text" id="aeLetterRef" placeholder="e.g. 19/AE/LID&amp;EW/PDY/2025-26">
+      </div>
+      <div class="field narrow">
+        <label for="aeLetterDate">AE Letter Date</label>
+        <input type="date" id="aeLetterDate">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="agreementNumber">Agreement Number</label>
+        <input type="text" id="agreementNumber" placeholder="e.g. 19/AE/LID&amp;EW/PDY/2025-26">
+      </div>
+      <div class="field narrow">
+        <label for="agreementDate">Agreement Date</label>
+        <input type="date" id="agreementDate">
+      </div>
+    </div>
+    <div class="hint">Two optional extra references (only appear in the document if filled in — no "Not Specified" placeholder for these two):</div>
+    <div class="row">
+      <div class="field">
+        <label for="extraRef1">Extra Reference 1 (optional)</label>
+        <input type="text" id="extraRef1" placeholder="Free text">
+      </div>
+      <div class="field">
+        <label for="extraRef2">Extra Reference 2 (optional)</label>
+        <input type="text" id="extraRef2" placeholder="Free text">
+      </div>
+    </div>
+    <div class="hint">The final reference — IS 516 (Part 1/Sec 1) — is fixed and always included last, whatever the numbering above works out to.</div>
+  </div>
+
+  <div class="card">
+    <h2>4. Mix, Casting &amp; Testing</h2>
+    <div class="row">
+      <div class="field">
+        <label for="mixSpec">Mix Spec</label>
+        <input type="text" id="mixSpec" placeholder="e.g. M20">
+      </div>
+      <div class="field">
+        <label for="castingDate">Casting Date</label>
+        <input type="date" id="castingDate">
+      </div>
+      <div class="field">
+        <label for="testingDate">Testing Date *</label>
+        <input type="date" id="testingDate">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="receiptDate">Date of Receipt of Specimen</label>
+        <input type="date" id="receiptDate">
+      </div>
+    </div>
+    <div class="hint">Specimen size is fixed at 15cm x15cm x15cm.</div>
+  </div>
+
+  <div class="card">
+    <h2>5. Specimen Results (1–20 specimens)</h2>
+    <table class="specimen" id="specimenTable">
+      <thead>
+        <tr>
+          <th>Sl No</th>
+          <th>Area (sq.cm)</th>
+          <th>Dry Weight (kg)</th>
+          <th>Wet Weight (kg)</th>
+          <th>Max Load (kN)</th>
+          <th>Strength (MPa)</th>
+          <th>Mean (MPa)</th>
+          <th>Variation (%)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="specimenBody"><!-- filled by JS --></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addSpecimenBtn">+ Add specimen</button>
+      <span class="hint" id="specimenCountHint"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>6. Signatories</h2>
+    <p class="hint">Role labels come from Config; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet.</p>
+    <div id="signatoryFields"><!-- filled by JS --></div>
+  </div>
+
+  <div class="card">
+    <h2>7. Generate</h2>
+    <div class="toolbar">
+      <button id="generateBtn">Generate Report (.docx)</button>
+      <button type="button" class="secondary" id="newReportBtn" style="display:none;">Start New Report</button>
+    </div>
+    <div id="statusMsg"></div>
+  </div>
+
+  <div class="advanced-toggle-row">
+    <button type="button" id="advancedToggleBtn" class="advanced-toggle-btn">+ Advanced</button>
+  </div>
+
+  <div id="advancedSection" class="advanced-section" style="display:none;">
+
+    <div class="card">
+      <h2>Auto-fill from Engineer Letter (optional, LLM-assisted)</h2>
+      <p class="hint">If you have a letter from the Assistant Engineer as a PDF: copy the prompt below, paste it into an LLM chat (e.g. Claude) along with the PDF attached, then paste the JSON it returns here to auto-fill the matching fields above.</p>
+      <div class="toolbar">
+        <button type="button" class="secondary" id="copyPromptBtn">Copy extraction prompt</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:1 1 100%;">
+          <label for="llmJsonInput">Paste returned JSON here</label>
+          <textarea id="llmJsonInput" style="min-height:100px;" placeholder='{ "workDescription": "...", "aeLetterRef": "...", ... }'></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="applyJsonBtn">Apply JSON to form</button>
+      </div>
+      <div id="jsonApplyStatus" class="hint"></div>
+    </div>
+
+    <div class="card">
+      <h2>Auto-fill Specimen Table from Log Book Photo (LLM-assisted)</h2>
+      <p class="hint">Copy the prompt below, paste it into an LLM chat along with a photo of the log book page (rotated the right way up, or let the LLM rotate it), then paste the JSON it returns here. Only Dry Weight, Wet Weight, and Max Load are read in — Area is left as whatever's already in the form, and any Compressive Strength already written in the log book is ignored (it's recalculated here instead).</p>
+      <div class="toolbar">
+        <button type="button" class="secondary" id="copySpecimenPromptBtn">Copy extraction prompt</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:1 1 100%;">
+          <label for="specimenJsonInput">Paste returned JSON here</label>
+          <textarea id="specimenJsonInput" style="min-height:100px;" placeholder='{ "specimens": [ { "dryWeight": 8.308, "wetWeight": 8.312, "maxLoad": 412 } ] }'></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="applySpecimenJsonBtn">Apply JSON to specimen table</button>
+      </div>
+      <div id="specimenJsonApplyStatus" class="hint"></div>
+    </div>
+
+        <div class="card">
+      <h2>Load a Previous Report</h2>
+      <p class="hint">Search by Report No. or Page Number to pull a past report of this same type back into this form (from the JSON snapshot saved alongside the report log). Review everything before regenerating — this overwrites what's currently in the form.</p>
+      <div class="row">
+        <div class="field">
+          <label for="backupSearchInput">Search Report No. / Page No.</label>
+          <input type="text" id="backupSearchInput" placeholder="e.g. CON/CE/SCL/003032026 or 12-A">
+        </div>
+        <div class="field narrow" style="justify-content:flex-end;">
+          <button type="button" id="backupSearchBtn">Search</button>
+        </div>
+      </div>
+      <div id="backupResults"></div>
+      <div id="backupApplyStatus" class="hint"></div>
+    </div>
+
+
+  </div>
+</div>
+
+  <footer class="site-footer">
+    <p>Developed by Dept. of Civil Engineering, Amal Jyothi College of Engineering.</p>
+    <p>For queries, contact Mr. Bennet Jose Mathew.</p>
+    <p id="footerReportCount"></p>
+  </footer>
+
+
+<script>
+/* =========================================================================
+   Page identity — must be set before the shared script include below
+   ========================================================================= */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKj68-aD6FZQfuBHSHKGQ1U_jB7idm7iR6VtQww7w74PzS--tAuSGCfl6ylbt2d6Yb/exec';
+const REPORT_TYPE = 'Cube';
+const MIN_SPECIMENS = 1;
+const MAX_SPECIMENS = 20;
+const DEFAULT_INITIAL_SPECIMENS = 3;
+
+/* =========================================================================
+   Shared state
+   ========================================================================= */
+let CONFIG = {
+  ReportPrefix: 'CON/CE/SCL/',
+  RoleLabel1: 'Test performed by',
+  RoleLabel2: 'Investigator 1',
+  RoleLabel3: 'Investigator 2',
+  RoleLabel4: 'HoD'
+};
+let NAMES = { general: [], testPerformedBy: [], hod: [] };
+let selectedAddress = null; // { addressId, address }
+let configLoaded = false;
+
+/* =========================================================================
+   Small utilities
+   ========================================================================= */
+function debounce(fn, ms){
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function escapeHtml(str){
+  // Uses \u003c / \u003e instead of literal < > characters in this source —
+  // literal angle brackets here have been known to get mangled into the text
+  // "&lt;"/"&gt;" if this file is ever copied from a rendered HTML view
+  // instead of raw/plain text, which breaks this regex silently.
+  var lt = '\u003c', gt = '\u003e';
+  var map = { '&': '&amp;', '"': '&quot;', "'": '&#39;' };
+  map[lt] = '&lt;';
+  map[gt] = '&gt;';
+  var pattern = new RegExp('[&' + lt + gt + '"\']', 'g');
+  return String(str).replace(pattern, function(c){ return map[c]; });
+}
+
+function fmtDate(isoStr){
+  if (!isoStr) return null;
+  const [y, m, d] = isoStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function orNotSpecified(val){
+  return (val && val.toString().trim()) ? val.toString().trim() : 'Not Specified';
+}
+
+function normalizeDateStr(v){
+  if (v === null || v === undefined) return null;
+  const s = v.toString().trim();
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // already ISO
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/); // DD/MM/YYYY or DD-MM-YYYY
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  return null; // unrecognized — caller should flag it and leave the field untouched
+}
+
+function fallbackCopy(text, onDone){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    onDone();
+  } catch (e) {
+    alert('Could not copy automatically. Here is the text to copy manually:\n\n' + text);
+  }
+  document.body.removeChild(ta);
+}
+
+function copyToClipboard(text, onDone){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onDone).catch(() => fallbackCopy(text, onDone));
+  } else {
+    fallbackCopy(text, onDone);
+  }
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function sanitizeForFilename(s){
+  return (s || '').replace(/[\\/:*?"<>|]/g, '_');
+}
+
+/* =========================================================================
+   Report number & date
+   ========================================================================= */
+function populateMonthYear(){
+  const monthSel = document.getElementById('reportMonth');
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const today = new Date();
+  monthNames.forEach((name, idx) => {
+    const opt = document.createElement('option');
+    opt.value = String(idx + 1).padStart(2, '0');
+    opt.textContent = `${opt.value} — ${name}`;
+    monthSel.appendChild(opt);
+  });
+  monthSel.value = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('reportYear').value = today.getFullYear();
+  document.getElementById('reportDate').value = today.toISOString().slice(0, 10);
+}
+
+function composedReportNumber(){
+  const numRaw = document.getElementById('reportNum').value.trim();
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value.trim();
+  const prefix = CONFIG.ReportPrefix || '';
+  const numPadded = numRaw.padStart(3, '0').slice(-3);
+  return `${prefix}${numPadded}${month}${year}`;
+}
+
+function updateReportNumberPreview(){
+  const numRaw = document.getElementById('reportNum').value.trim();
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value.trim();
+  const preview = document.getElementById('reportNumPreview');
+  if (!preview) return;
+  if (!numRaw || !month || !year || year.length !== 4) {
+    preview.textContent = '—';
+    return;
+  }
+  preview.textContent = composedReportNumber();
+}
+
+/* =========================================================================
+   Config/Names/last-submitted/count — one combined ?action=init request
+   ========================================================================= */
+async function loadConfig(){
+  const statusEl = document.getElementById('configStatus');
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    statusEl.textContent = 'Apps Script URL not set. Edit APPS_SCRIPT_URL near the top of this file. Using built-in defaults for now.';
+    statusEl.classList.add('bad');
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+    return;
+  }
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=init&type=${encodeURIComponent(REPORT_TYPE)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Unknown error loading init data');
+
+    CONFIG = Object.assign({}, CONFIG, data.config);
+    NAMES = {
+      general: (data.names && data.names.general) || [],
+      testPerformedBy: (data.names && data.names.testPerformedBy) || [],
+      hod: (data.names && data.names.hod) || []
+    };
+    configLoaded = true;
+
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+    updateReportNumberPreview();
+    renderLastSubmittedInfo(data.lastReport);
+    renderFooterReportCount(data.reportCount);
+
+    statusEl.textContent = `Configuration loaded. Prefix "${CONFIG.ReportPrefix}". Names: ${NAMES.general.length} general, ${NAMES.testPerformedBy.length} test-performed-by, ${NAMES.hod.length} HoD.`;
+    statusEl.classList.remove('bad');
+  } catch (err) {
+    statusEl.textContent = `Could not reach Apps Script backend (${err.message}). Using built-in defaults — you can still generate a report, but check the prefix/role labels are correct before relying on them.`;
+    statusEl.classList.add('bad');
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+  }
+}
+
+function renderLastSubmittedInfo(lastReport){
+  const el = document.getElementById('lastSubmittedInfo');
+  if (!el) return;
+  if (!lastReport || !lastReport.reportNo) {
+    el.textContent = `No ${REPORT_TYPE} reports submitted yet.`;
+    return;
+  }
+  el.textContent = `Last submitted (${REPORT_TYPE}) — Page No: ${lastReport.pageNumber || '—'} · Report No: ${lastReport.reportNo} · Investigator 1: ${lastReport.investigator1 || '—'}`;
+}
+
+function renderFooterReportCount(count){
+  const el = document.getElementById('footerReportCount');
+  if (!el) return;
+  if (count === undefined || count === null) {
+    el.textContent = '';
+    return;
+  }
+  el.textContent = `${count} report${count === 1 ? '' : 's'} generated so far (all test types).`;
+}
+
+/* =========================================================================
+   Signatories — driven by CONFIG.RoleLabel1-4 and the 3 Names pools
+   ========================================================================= */
+// 1 = Test performed by (own column, auto-fills if it has exactly one name)
+// 2 & 3 = Investigator 1 / 2 (share the general Name column)
+// 4 = HoD (own column, auto-fills if it has exactly one name)
+function namesForSlot(n){
+  if (n === 1) return NAMES.testPerformedBy;
+  if (n === 4) return NAMES.hod;
+  return NAMES.general;
+}
+
+function renderSignatoryFields(){
+  const container = document.getElementById('signatoryFields');
+  if (!container) return;
+  container.innerHTML = '';
+  for (let n = 1; n <= 4; n++){
+    const label = CONFIG[`RoleLabel${n}`] || `Role ${n}`;
+    const sourceNames = namesForSlot(n);
+    const row = document.createElement('div');
+    row.className = 'sig-row';
+    row.innerHTML = `
+      <div class="field">
+        <label for="sigSelect${n}">${escapeHtml(label)}${n === 1 ? ' *' : ''}</label>
+        <select id="sigSelect${n}">
+          <option value="">-- Select --</option>
+          ${sourceNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
+          <option value="__other__">Other (type manually)</option>
+        </select>
+      </div>
+      <div class="field other-name" id="sigOtherWrap${n}" style="display:none;">
+        <label for="sigOther${n}">Name (typed)</label>
+        <input type="text" id="sigOther${n}" placeholder="Type name">
+      </div>
+    `;
+    container.appendChild(row);
+    const select = row.querySelector(`#sigSelect${n}`);
+    if (sourceNames.length === 1) {
+      select.value = sourceNames[0]; // auto-fill when the source list has exactly one name
+    }
+    select.addEventListener('change', (e) => {
+      document.getElementById(`sigOtherWrap${n}`).style.display = (e.target.value === '__other__') ? 'flex' : 'none';
+    });
+  }
+}
+
+function getSignatories(){
+  // [{ role, name }], only slots that were actually filled in — used for the docx signatory table.
+  const result = [];
+  for (let n = 1; n <= 4; n++){
+    const select = document.getElementById(`sigSelect${n}`);
+    if (!select) continue;
+    let name = '';
+    if (select.value === '__other__') {
+      name = document.getElementById(`sigOther${n}`).value.trim();
+    } else {
+      name = select.value.trim();
+    }
+    if (name) result.push({ role: CONFIG[`RoleLabel${n}`] || `Role ${n}`, name });
+  }
+  return result;
+}
+
+function getSignatoryNamesBySlot(){
+  // { slot1..slot4: name or '' } — used for ReportLog columns (name only, no role) and snapshots.
+  const out = {};
+  for (let n = 1; n <= 4; n++){
+    const select = document.getElementById(`sigSelect${n}`);
+    let name = '';
+    if (select) {
+      name = (select.value === '__other__')
+        ? document.getElementById(`sigOther${n}`).value.trim()
+        : select.value.trim();
+    }
+    out[`slot${n}`] = name;
+  }
+  return out;
+}
+
+/* =========================================================================
+   Address widget
+   ========================================================================= */
+async function onAddressSearch(){
+  const q = document.getElementById('addressSearch').value.trim();
+  const resultsEl = document.getElementById('addressResults');
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    resultsEl.innerHTML = '<div class="addr-option">Apps Script URL not configured.</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=search&q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Search failed');
+    renderAddressResults(data.results);
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="addr-option">Search error: ${escapeHtml(err.message)}</div>`;
+    resultsEl.style.display = 'block';
+  }
+}
+
+function renderAddressResults(results){
+  const resultsEl = document.getElementById('addressResults');
+  if (!results.length) {
+    resultsEl.innerHTML = '<div class="addr-option">No matches. Try "+ Add new address" below.</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+  resultsEl.innerHTML = results.map(r => `
+    <div class="addr-option" data-id="${escapeHtml(r.addressId)}" data-address="${escapeHtml(r.address)}">
+      <span class="id">${escapeHtml(r.addressId)}</span>${escapeHtml(r.address)}
+    </div>
+  `).join('');
+  resultsEl.style.display = 'block';
+  resultsEl.querySelectorAll('.addr-option[data-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      selectAddress({ addressId: el.getAttribute('data-id'), address: el.getAttribute('data-address') });
+      resultsEl.style.display = 'none';
+    });
+  });
+}
+
+function selectAddress(addr){
+  selectedAddress = addr;
+  document.getElementById('addressSearch').value = '';
+  const box = document.getElementById('selectedAddress');
+  box.style.display = 'block';
+  box.innerHTML = `<button type="button" onclick="clearSelectedAddress()">✕ change</button>${escapeHtml(addr.address)}`;
+}
+
+function clearSelectedAddress(){
+  selectedAddress = null;
+  document.getElementById('selectedAddress').style.display = 'none';
+}
+window.clearSelectedAddress = clearSelectedAddress;
+
+async function onSaveNewAddress(){
+  const text = document.getElementById('newAddressText').value.trim();
+  if (!text) { alert('Enter an address first.'); return; }
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    alert('Apps Script URL not configured — cannot save to the sheet.');
+    return;
+  }
+  const btn = document.getElementById('saveAddressBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=addAddress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight
+      body: JSON.stringify({ address: text })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Save failed');
+    selectAddress({ addressId: data.addressId, address: data.address });
+    document.getElementById('addAddressForm').style.display = 'none';
+    document.getElementById('newAddressText').value = '';
+  } catch (err) {
+    alert(`Could not save address: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save & use';
+  }
+}
+
+/* =========================================================================
+   Advanced section toggle (hidden by default on every page)
+   ========================================================================= */
+function toggleAdvancedSection(){
+  const section = document.getElementById('advancedSection');
+  const btn = document.getElementById('advancedToggleBtn');
+  const isHidden = section.style.display === 'none';
+  section.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '\u2212 Advanced' : '+ Advanced';
+}
+
+/* =========================================================================
+   Generic specimen-table controller — used for the cube's one table and
+   each of the brick's three (Compressive / Water Absorption / Efflorescence)
+   ========================================================================= */
+function createSpecimenTable(opts){
+  const min = opts.min || 1;
+  const max = opts.max || 20;
+  const body = document.getElementById(opts.bodyId);
+  const addBtn = opts.addBtnId ? document.getElementById(opts.addBtnId) : null;
+  const hintEl = opts.countHintId ? document.getElementById(opts.countHintId) : null;
+
+  function renumber(){
+    Array.from(body.querySelectorAll('tr')).forEach((row, i) => {
+      const slno = row.querySelector('.slno');
+      if (slno) slno.textContent = i + 1;
+    });
+  }
+
+  function updateControls(){
+    const count = body.querySelectorAll('tr').length;
+    if (addBtn) addBtn.disabled = count >= max;
+    if (hintEl) hintEl.textContent = `${count} row${count === 1 ? '' : 's'} (min ${min}, max ${max})`;
+    body.querySelectorAll('.remove-specimen-btn').forEach(btn => { btn.disabled = count <= min; });
+  }
+
+  function makeRow(rowNumber){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="slno"></td>${opts.buildRowCells(rowNumber)}<td><button type="button" class="secondary remove-specimen-btn" title="Remove row">\u2715</button></td>`;
+    tr.querySelector('.remove-specimen-btn').addEventListener('click', () => removeRow(tr));
+    return tr;
+  }
+
+  function addRow(){
+    const count = body.querySelectorAll('tr').length;
+    if (count >= max) return;
+    body.appendChild(makeRow(count + 1));
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function removeRow(tr){
+    const count = body.querySelectorAll('tr').length;
+    if (count <= min) return;
+    tr.remove();
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function setCount(n){
+    const clamped = Math.max(min, Math.min(max, n));
+    while (body.querySelectorAll('tr').length < clamped) addRow();
+    while (body.querySelectorAll('tr').length > clamped) {
+      const rows = body.querySelectorAll('tr');
+      removeRow(rows[rows.length - 1]);
+    }
+    return clamped;
+  }
+
+  function rebuild(initialCount){
+    body.innerHTML = '';
+    const n = initialCount || min;
+    for (let i = 0; i < n; i++) body.appendChild(makeRow(i + 1));
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function rows(){ return Array.from(body.querySelectorAll('tr')); }
+
+  if (addBtn) addBtn.addEventListener('click', addRow);
+
+  return { addRow, removeRow, setCount, rebuild, rows, renumber, updateControls };
+}
+
+/* =========================================================================
+   Form snapshot — common fields. Pages implement collectPageSnapshot() /
+   applyPageSnapshot(snapshot) for whatever's specific to that report type.
+   ========================================================================= */
+function collectFormSnapshot(){
+  const common = {
+    reportNum: document.getElementById('reportNum').value,
+    reportMonth: document.getElementById('reportMonth').value,
+    reportYear: document.getElementById('reportYear').value,
+    reportDate: document.getElementById('reportDate').value,
+    pageNumber: document.getElementById('pageNumber').value,
+    selectedAddress: selectedAddress ? { addressId: selectedAddress.addressId, address: selectedAddress.address } : null,
+    signatories: getSignatoryNamesBySlot()
+  };
+  const pageSpecific = (typeof collectPageSnapshot === 'function') ? collectPageSnapshot() : {};
+  return Object.assign({}, common, pageSpecific);
+}
+
+function applyFormSnapshot(snapshot){
+  if (!snapshot) return;
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+
+  setVal('reportNum', snapshot.reportNum);
+  setVal('reportMonth', snapshot.reportMonth);
+  setVal('reportYear', snapshot.reportYear);
+  setVal('reportDate', snapshot.reportDate);
+  setVal('pageNumber', snapshot.pageNumber);
+  updateReportNumberPreview();
+
+  if (snapshot.selectedAddress) {
+    selectAddress(snapshot.selectedAddress); // stored verbatim, independent of later Addresses-sheet edits
+  }
+
+  if (snapshot.signatories) {
+    for (let n = 1; n <= 4; n++){
+      const name = snapshot.signatories[`slot${n}`];
+      if (!name) continue;
+      const select = document.getElementById(`sigSelect${n}`);
+      if (!select) continue;
+      const otherWrap = document.getElementById(`sigOtherWrap${n}`);
+      const hasOption = Array.from(select.options).some(o => o.value === name);
+      if (hasOption) {
+        select.value = name;
+        if (otherWrap) otherWrap.style.display = 'none';
+      } else {
+        select.value = '__other__';
+        if (otherWrap) otherWrap.style.display = 'flex';
+        const otherInput = document.getElementById(`sigOther${n}`);
+        if (otherInput) otherInput.value = name;
+      }
+    }
+  }
+
+  if (typeof applyPageSnapshot === 'function') applyPageSnapshot(snapshot);
+}
+
+/* =========================================================================
+   Load a Previous Report (search + apply), filtered to this page's REPORT_TYPE
+   ========================================================================= */
+function onBackupSearch(){
+  const q = document.getElementById('backupSearchInput').value.trim();
+  const resultsEl = document.getElementById('backupResults');
+  const statusEl = document.getElementById('backupApplyStatus');
+  statusEl.textContent = '';
+  statusEl.classList.remove('error');
+  if (!q) {
+    resultsEl.innerHTML = '';
+    statusEl.textContent = 'Type a report number or page number to search.';
+    return;
+  }
+  resultsEl.innerHTML = '<div class="hint">Searching…</div>';
+  fetch(`${APPS_SCRIPT_URL}?action=searchLog&q=${encodeURIComponent(q)}&type=${encodeURIComponent(REPORT_TYPE)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) throw new Error(data.error || 'Search failed');
+      renderBackupResults(data.results);
+    })
+    .catch(err => {
+      resultsEl.innerHTML = '';
+      statusEl.textContent = `Search error: ${err.message}`;
+      statusEl.classList.add('error');
+    });
+}
+
+function renderBackupResults(results){
+  const resultsEl = document.getElementById('backupResults');
+  if (!results.length) {
+    resultsEl.innerHTML = `<div class="hint">No matching ${REPORT_TYPE} reports found.</div>`;
+    return;
+  }
+  resultsEl.innerHTML = results.map(r => `
+    <div class="backup-result" data-reportno="${escapeHtml(r.reportNo)}">
+      <strong>${escapeHtml(r.reportNo)}</strong> — Page ${escapeHtml(r.pageNumber || '—')} — ${escapeHtml(r.date || '—')}
+    </div>
+  `).join('');
+  resultsEl.querySelectorAll('.backup-result').forEach(el => {
+    el.addEventListener('click', () => onLoadBackup(el.getAttribute('data-reportno')));
+  });
+}
+
+function onLoadBackup(reportNo){
+  const statusEl = document.getElementById('backupApplyStatus');
+  statusEl.textContent = 'Loading…';
+  statusEl.classList.remove('error');
+  fetch(`${APPS_SCRIPT_URL}?action=getBackup&reportNo=${encodeURIComponent(reportNo)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) throw new Error(data.error || 'Load failed');
+      if (!data.formDataJSON) throw new Error('No saved form data for this report (it may predate this feature).');
+      const snapshot = JSON.parse(data.formDataJSON);
+      applyFormSnapshot(snapshot);
+      statusEl.textContent = `Loaded ${reportNo} into the form. Review everything before regenerating.`;
+    })
+    .catch(err => {
+      statusEl.textContent = `Could not load: ${err.message}`;
+      statusEl.classList.add('error');
+    });
+}
+
+/* =========================================================================
+   Reset ("Start New Report") — common fields; pages implement
+   resetPageSpecificFields() for the rest.
+   ========================================================================= */
+function resetForm(){
+  const today = new Date();
+  document.getElementById('reportNum').value = '';
+  document.getElementById('reportMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('reportYear').value = today.getFullYear();
+  document.getElementById('reportDate').value = today.toISOString().slice(0, 10);
+  document.getElementById('pageNumber').value = '';
+  updateReportNumberPreview();
+
+  clearSelectedAddress();
+  document.getElementById('addressSearch').value = '';
+  document.getElementById('addressResults').style.display = 'none';
+  document.getElementById('addAddressForm').style.display = 'none';
+  document.getElementById('newAddressText').value = '';
+
+  renderSignatoryFields(); // re-applies auto-fill for any single-name slots
+
+  const clearIfPresent = (id) => { const el = document.getElementById(id); if (el) el.value = ''; };
+  clearIfPresent('backupSearchInput');
+  const backupResults = document.getElementById('backupResults');
+  if (backupResults) backupResults.innerHTML = '';
+  const backupStatus = document.getElementById('backupApplyStatus');
+  if (backupStatus) backupStatus.textContent = '';
+
+  document.getElementById('statusMsg').className = '';
+  document.getElementById('statusMsg').textContent = '';
+  const newReportBtn = document.getElementById('newReportBtn');
+  if (newReportBtn) newReportBtn.style.display = 'none';
+
+  if (typeof resetPageSpecificFields === 'function') resetPageSpecificFields();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* =========================================================================
+   Generate + log — pages implement validateForm(), buildDocx(), and
+   getAvgStrengthForLog(); everything else here is generic.
+   ========================================================================= */
+async function onGenerate(){
+  const statusEl = document.getElementById('statusMsg');
+  statusEl.className = '';
+  statusEl.textContent = '';
+
+  const errors = (typeof validateForm === 'function') ? validateForm() : [];
+  if (typeof docx === 'undefined' || !docx.Packer) {
+    errors.push('The docx library failed to load from the CDN — check your internet connection, or that cdn.jsdelivr.net isn\'t blocked, then reload the page.');
+  }
+  if (errors.length) {
+    statusEl.className = 'error';
+    statusEl.innerHTML = errors.map(e => `\u2022 ${escapeHtml(e)}`).join('<br>');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const blob = await buildDocx();
+    const reportNo = sanitizeForFilename(composedReportNumber());
+    const pageNum = sanitizeForFilename(document.getElementById('pageNumber').value.trim());
+    const filenameStem = pageNum ? `${pageNum}_${reportNo}` : reportNo;
+    downloadBlob(blob, `${filenameStem}.docx`);
+    statusEl.className = 'ok';
+    statusEl.textContent = 'Report generated and downloaded.';
+    const newReportBtn = document.getElementById('newReportBtn');
+    if (newReportBtn) newReportBtn.style.display = 'inline-block';
+
+    const sigForDisplay = getSignatoryNamesBySlot();
+    renderLastSubmittedInfo({
+      pageNumber: document.getElementById('pageNumber').value.trim(),
+      reportNo: composedReportNumber(),
+      investigator1: sigForDisplay.slot2
+    });
+    logReportToSheet(); // best-effort; never blocks or reverts the download above
+  } catch (err) {
+    statusEl.className = 'error';
+    statusEl.textContent = `Failed to generate report: ${err.message}`;
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Report (.docx)';
+  }
+}
+
+async function logReportToSheet(){
+  const statusEl = document.getElementById('statusMsg');
+  try {
+    const sig = getSignatoryNamesBySlot();
+    const avgStrength = (typeof getAvgStrengthForLog === 'function') ? getAvgStrengthForLog() : '';
+    const payload = {
+      testType: REPORT_TYPE,
+      pageNumber: document.getElementById('pageNumber').value.trim(),
+      reportNo: composedReportNumber(),
+      date: fmtDate(document.getElementById('reportDate').value),
+      addresseeId: selectedAddress ? selectedAddress.addressId : '',
+      avgStrength: (avgStrength !== null && avgStrength !== undefined && avgStrength !== '' && !isNaN(avgStrength)) ? Number(Number(avgStrength).toFixed(2)) : '',
+      testPerformedBy: sig.slot1,
+      investigator1: sig.slot2,
+      investigator2: sig.slot3,
+      hod: sig.slot4,
+      formDataJSON: JSON.stringify(collectFormSnapshot())
+    };
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=logReport`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Log failed');
+  } catch (err) {
+    statusEl.textContent += ` (Note: could not log this report to the sheet: ${err.message})`;
+  }
+}
+
+/* =========================================================================
+   Wiring shared by both pages — call from each page's own wireEvents()
+   ========================================================================= */
+function wireCommonEvents(){
+  document.getElementById('reportNum').addEventListener('input', updateReportNumberPreview);
+  document.getElementById('reportMonth').addEventListener('change', updateReportNumberPreview);
+  document.getElementById('reportYear').addEventListener('input', updateReportNumberPreview);
+
+  document.getElementById('addressSearch').addEventListener('input', debounce(onAddressSearch, 300));
+  document.getElementById('showAddAddressBtn').addEventListener('click', () => {
+    document.getElementById('addAddressForm').style.display = 'block';
+  });
+  document.getElementById('cancelAddAddressBtn').addEventListener('click', () => {
+    document.getElementById('addAddressForm').style.display = 'none';
+    document.getElementById('newAddressText').value = '';
+  });
+  document.getElementById('saveAddressBtn').addEventListener('click', onSaveNewAddress);
+
+  const advancedToggleBtn = document.getElementById('advancedToggleBtn');
+  if (advancedToggleBtn) advancedToggleBtn.addEventListener('click', toggleAdvancedSection);
+
+  const backupSearchBtn = document.getElementById('backupSearchBtn');
+  if (backupSearchBtn) backupSearchBtn.addEventListener('click', onBackupSearch);
+  const backupSearchInput = document.getElementById('backupSearchInput');
+  if (backupSearchInput) {
+    backupSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); onBackupSearch(); }
+    });
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', onGenerate);
+  const newReportBtn = document.getElementById('newReportBtn');
+  if (newReportBtn) newReportBtn.addEventListener('click', resetForm);
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#addressSearchWrap')) {
+      document.getElementById('addressResults').style.display = 'none';
+    }
+  });
+}
+
+
+/* =========================================================================
+   Cube-specific: specimen table
+   ========================================================================= */
+let cubeTable; // createSpecimenTable() controller, built on DOMContentLoaded
+
+function buildCubeRowCells(){
+  const defaultArea = CONFIG.DefaultArea || 225;
+  return `
+    <td><input type="number" step="any" class="area" value="${defaultArea}"></td>
+    <td><input type="number" step="any" class="dryWeight"></td>
+    <td><input type="number" step="any" class="wetWeight"></td>
+    <td><input type="number" step="any" class="maxLoad"></td>
+    <td class="calc strength">—</td>
+    <td class="calc mean">—</td>
+    <td class="calc variation">—</td>
+  `;
+}
+
+function recalcSpecimens(){
+  const rows = cubeTable.rows();
+  const raw = rows.map(row => ({
+    area: parseFloat(row.querySelector('.area').value),
+    load: parseFloat(row.querySelector('.maxLoad').value)
+  }));
+  const strengths = raw.map(r => (r.area > 0 && !isNaN(r.load)) ? (r.load * 10) / r.area : NaN);
+  const validStrengths = strengths.filter(s => !isNaN(s));
+  const mean = validStrengths.length ? validStrengths.reduce((a, b) => a + b, 0) / validStrengths.length : NaN;
+
+  rows.forEach((row, i) => {
+    const s = strengths[i];
+    row.querySelector('.strength').textContent = isNaN(s) ? '—' : s.toFixed(2);
+    row.querySelector('.mean').textContent = isNaN(mean) ? '—' : mean.toFixed(2);
+    if (isNaN(s) || isNaN(mean) || mean === 0) {
+      row.querySelector('.variation').textContent = '—';
+    } else {
+      const v = ((s - mean) / mean) * 100;
+      row.querySelector('.variation').textContent = (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+    }
+  });
+}
+
+function getSpecimenData(){
+  const rows = cubeTable.rows();
+  const raw = rows.map(row => ({
+    area: parseFloat(row.querySelector('.area').value),
+    dryWeight: parseFloat(row.querySelector('.dryWeight').value),
+    wetWeight: parseFloat(row.querySelector('.wetWeight').value),
+    load: parseFloat(row.querySelector('.maxLoad').value)
+  }));
+  const strengths = raw.map(r => (r.area && r.load) ? (r.load * 10) / r.area : NaN);
+  const mean = strengths.reduce((a, b) => a + b, 0) / strengths.length;
+  return raw.map((r, i) => ({
+    ...r,
+    strength: strengths[i],
+    mean: mean,
+    variation: ((strengths[i] - mean) / mean) * 100
+  }));
+}
+
+function onConfigLoaded(){
+  if (!cubeTable) {
+    cubeTable = createSpecimenTable({
+      bodyId: 'specimenBody',
+      addBtnId: 'addSpecimenBtn',
+      countHintId: 'specimenCountHint',
+      min: MIN_SPECIMENS,
+      max: MAX_SPECIMENS,
+      buildRowCells: buildCubeRowCells,
+      onChange: recalcSpecimens
+    });
+  }
+  cubeTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+}
+
+/* =========================================================================
+   Cube-specific: form validation
+   ========================================================================= */
+function validateForm(){
+  const errors = [];
+  if (!document.getElementById('reportNum').value.trim()) errors.push('Report number is required.');
+  if (!document.getElementById('reportYear').value.trim()) errors.push('Report year is required.');
+  if (!document.getElementById('reportDate').value) errors.push('Report date is required.');
+  if (!selectedAddress) errors.push('Please select or add an addressee.');
+  if (!document.getElementById('testingDate').value) errors.push('Testing date is required.');
+  const sig1Select = document.getElementById('sigSelect1');
+  const sig1Other = document.getElementById('sigOther1');
+  const sig1Filled = sig1Select && (sig1Select.value === '__other__' ? (sig1Other && sig1Other.value.trim()) : sig1Select.value.trim());
+  if (!sig1Filled) errors.push(`"${CONFIG.RoleLabel1 || 'Role 1'}" signatory is required.`);
+
+  cubeTable.rows().forEach((row, i) => {
+    const area = parseFloat(row.querySelector('.area').value);
+    const dry = parseFloat(row.querySelector('.dryWeight').value);
+    const wet = parseFloat(row.querySelector('.wetWeight').value);
+    const load = parseFloat(row.querySelector('.maxLoad').value);
+    if (isNaN(area) || area <= 0) errors.push(`Specimen ${i + 1}: area is required.`);
+    if (isNaN(dry)) errors.push(`Specimen ${i + 1}: dry weight is required.`);
+    if (isNaN(wet)) errors.push(`Specimen ${i + 1}: wet weight is required.`);
+    if (isNaN(load)) errors.push(`Specimen ${i + 1}: max load is required.`);
+  });
+  return errors;
+}
+
+function getAvgStrengthForLog(){
+  const specimens = getSpecimenData();
+  return specimens.length ? specimens[0].mean : '';
+}
+
+/* =========================================================================
+   Cube-specific: snapshot collect/apply/reset
+   ========================================================================= */
+function collectPageSnapshot(){
+  const specimens = cubeTable.rows().map(row => ({
+    area: row.querySelector('.area').value,
+    dryWeight: row.querySelector('.dryWeight').value,
+    wetWeight: row.querySelector('.wetWeight').value,
+    maxLoad: row.querySelector('.maxLoad').value
+  }));
+  return {
+    workDesc: document.getElementById('workDesc').value,
+    aeLetterRef: document.getElementById('aeLetterRef').value,
+    aeLetterDate: document.getElementById('aeLetterDate').value,
+    agreementNumber: document.getElementById('agreementNumber').value,
+    agreementDate: document.getElementById('agreementDate').value,
+    extraRef1: document.getElementById('extraRef1').value,
+    extraRef2: document.getElementById('extraRef2').value,
+    mixSpec: document.getElementById('mixSpec').value,
+    castingDate: document.getElementById('castingDate').value,
+    testingDate: document.getElementById('testingDate').value,
+    receiptDate: document.getElementById('receiptDate').value,
+    specimens
+  };
+}
+
+function applyPageSnapshot(snapshot){
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+  setVal('workDesc', snapshot.workDesc);
+  setVal('aeLetterRef', snapshot.aeLetterRef);
+  setVal('aeLetterDate', snapshot.aeLetterDate);
+  setVal('agreementNumber', snapshot.agreementNumber);
+  setVal('agreementDate', snapshot.agreementDate);
+  setVal('extraRef1', snapshot.extraRef1);
+  setVal('extraRef2', snapshot.extraRef2);
+  setVal('mixSpec', snapshot.mixSpec);
+  setVal('castingDate', snapshot.castingDate);
+  setVal('testingDate', snapshot.testingDate);
+  setVal('receiptDate', snapshot.receiptDate);
+
+  if (Array.isArray(snapshot.specimens) && snapshot.specimens.length) {
+    cubeTable.setCount(snapshot.specimens.length);
+    const rows = cubeTable.rows();
+    snapshot.specimens.forEach((s, i) => {
+      if (!rows[i]) return;
+      if (s.area !== undefined) rows[i].querySelector('.area').value = s.area;
+      if (s.dryWeight !== undefined) rows[i].querySelector('.dryWeight').value = s.dryWeight;
+      if (s.wetWeight !== undefined) rows[i].querySelector('.wetWeight').value = s.wetWeight;
+      if (s.maxLoad !== undefined) rows[i].querySelector('.maxLoad').value = s.maxLoad;
+    });
+    recalcSpecimens();
+  }
+}
+
+function resetPageSpecificFields(){
+  ['workDesc', 'aeLetterRef', 'aeLetterDate', 'agreementNumber', 'agreementDate',
+   'extraRef1', 'extraRef2', 'mixSpec', 'castingDate', 'testingDate', 'receiptDate'
+  ].forEach(id => { document.getElementById(id).value = ''; });
+
+  cubeTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+
+  document.getElementById('llmJsonInput').value = '';
+  document.getElementById('jsonApplyStatus').textContent = '';
+  document.getElementById('specimenJsonInput').value = '';
+  document.getElementById('specimenJsonApplyStatus').textContent = '';
+}
+
+/* =========================================================================
+   LLM-assisted auto-fill of the Engineer Letter fields
+   ========================================================================= */
+function getExtractionPrompt(){
+  return `You are extracting structured data from a letter (scan/photo/PDF) sent by an Assistant Engineer, for a concrete cube compressive strength test lab report.
+
+Read the attached letter (OCR it if it is scanned or an image) and return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences, no explanation:
+
+{
+  "workDescription": string or null,
+  "aeLetterRef": string or null,
+  "aeLetterDate": string or null,
+  "agreementNumber": string or null,
+  "agreementDate": string or null,
+  "mixSpec": string or null,
+  "castingDate": string or null,
+  "testingDate": string or null,
+  "receiptDate": string or null,
+  "extraRef1": string or null,
+  "extraRef2": string or null,
+  "addressee": string or null
+}
+
+Field notes:
+- workDescription: the SO number and/or work description mentioned (e.g. "SO 155/25-26 PDY Thottappalli Kalarikkal road concreting ward 18").
+- aeLetterRef / aeLetterDate: the Assistant Engineer's own letter reference number and its date.
+- agreementNumber / agreementDate: the agreement referenced, if any.
+- mixSpec: the concrete mix spec, e.g. "M20".
+- castingDate / testingDate / receiptDate: relevant dates if stated (receiptDate = when the specimen was received at the lab).
+- extraRef1 / extraRef2: any other distinct reference mentioned that does not fit the fields above.
+- addressee: the sender's name, designation, and office as a multi-line address block, with lines separated by \\n (this is a draft only — it will be reviewed before being saved).
+
+Rules:
+- Use null for anything not stated in the letter — never guess or invent a value.
+- Normalize every date to YYYY-MM-DD.
+- Output must be valid JSON and nothing else.`;
+}
+
+function onCopyPrompt(){
+  const statusEl = document.getElementById('jsonApplyStatus');
+  copyToClipboard(getExtractionPrompt(), () => {
+    statusEl.classList.remove('error');
+    statusEl.textContent = 'Prompt copied to clipboard — paste it into an LLM chat along with the letter PDF.';
+  });
+}
+
+function onApplyJson(){
+  const statusEl = document.getElementById('jsonApplyStatus');
+  statusEl.classList.remove('error');
+  const raw = document.getElementById('llmJsonInput').value.trim();
+  if (!raw) {
+    statusEl.textContent = 'Paste the JSON returned by the LLM first.';
+    statusEl.classList.add('error');
+    return;
+  }
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (err) {
+    statusEl.textContent = `Invalid JSON: ${err.message}`;
+    statusEl.classList.add('error');
+    return;
+  }
+
+  const textFieldMap = {
+    workDescription: 'workDesc', aeLetterRef: 'aeLetterRef', agreementNumber: 'agreementNumber',
+    mixSpec: 'mixSpec', extraRef1: 'extraRef1', extraRef2: 'extraRef2'
+  };
+  const dateFieldMap = {
+    aeLetterDate: 'aeLetterDate', agreementDate: 'agreementDate',
+    castingDate: 'castingDate', testingDate: 'testingDate', receiptDate: 'receiptDate'
+  };
+
+  const filled = [];
+  const skippedDates = [];
+
+  Object.entries(textFieldMap).forEach(([jsonKey, elId]) => {
+    const val = data[jsonKey];
+    if (val !== null && val !== undefined && val.toString().trim()) {
+      document.getElementById(elId).value = val.toString().trim();
+      filled.push(elId);
+    }
+  });
+
+  Object.entries(dateFieldMap).forEach(([jsonKey, elId]) => {
+    const val = data[jsonKey];
+    if (val !== null && val !== undefined && val.toString().trim()) {
+      const iso = normalizeDateStr(val);
+      if (iso) {
+        document.getElementById(elId).value = iso;
+        filled.push(elId);
+      } else {
+        skippedDates.push(`${jsonKey}="${val}"`);
+      }
+    }
+  });
+
+  if (data.addressee && data.addressee.toString().trim()) {
+    document.getElementById('addAddressForm').style.display = 'block';
+    document.getElementById('newAddressText').value = data.addressee.toString().trim();
+    filled.push('addressee (draft — review, then "Save & use")');
+  }
+
+  let msg = filled.length ? `Filled: ${filled.join(', ')}.` : 'Nothing matched — check the JSON keys against the prompt schema.';
+  if (skippedDates.length) msg += ` Could not parse date(s): ${skippedDates.join('; ')} — enter manually.`;
+  statusEl.textContent = msg;
+  if (!filled.length) statusEl.classList.add('error');
+}
+
+/* =========================================================================
+   LLM-assisted auto-fill of the specimen table from a log book photo
+   ========================================================================= */
+function getSpecimenExtractionPrompt(){
+  return `You are extracting concrete cube test specimen data from a photo of a handwritten lab log book page (the photo may be rotated — mentally rotate it the right way up before reading).
+
+For each specimen row in the log book, read ONLY these three values:
+- Dry Weight (kg)
+- Wet Weight (kg)
+- Maximum Load (the load column, whatever unit it's recorded in — copy the number exactly as written)
+
+Do NOT read or return any Compressive Strength / result column, even if one is present in the log book — it gets recalculated separately and should be ignored entirely.
+
+Return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences, no explanation:
+
+{
+  "specimens": [
+    { "dryWeight": number or null, "wetWeight": number or null, "maxLoad": number or null }
+  ]
+}
+
+One entry per specimen row, in the same top-to-bottom order they appear in the log book page. Use null for any value you can't read confidently — never guess or invent a number. Output must be valid JSON and nothing else.`;
+}
+
+function onCopySpecimenPrompt(){
+  const statusEl = document.getElementById('specimenJsonApplyStatus');
+  copyToClipboard(getSpecimenExtractionPrompt(), () => {
+    statusEl.classList.remove('error');
+    statusEl.textContent = 'Prompt copied to clipboard — paste it into an LLM chat along with the log book photo.';
+  });
+}
+
+function onApplySpecimenJson(){
+  const statusEl = document.getElementById('specimenJsonApplyStatus');
+  statusEl.classList.remove('error');
+  const raw = document.getElementById('specimenJsonInput').value.trim();
+  if (!raw) {
+    statusEl.textContent = 'Paste the JSON returned by the LLM first.';
+    statusEl.classList.add('error');
+    return;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (err) {
+    statusEl.textContent = `Invalid JSON: ${err.message}`;
+    statusEl.classList.add('error');
+    return;
+  }
+  if (!data || !Array.isArray(data.specimens) || !data.specimens.length) {
+    statusEl.textContent = 'JSON must have a non-empty "specimens" array.';
+    statusEl.classList.add('error');
+    return;
+  }
+
+  const warnings = [];
+  let desiredCount = data.specimens.length;
+  if (desiredCount > MAX_SPECIMENS) {
+    warnings.push(`log book had ${desiredCount} rows — only the first ${MAX_SPECIMENS} were applied (form max)`);
+    desiredCount = MAX_SPECIMENS;
+  }
+  const actualCount = cubeTable.setCount(desiredCount);
+  const rows = cubeTable.rows();
+  let filledCount = 0;
+  const missingFields = [];
+  data.specimens.slice(0, actualCount).forEach((s, i) => {
+    const row = rows[i];
+    if (!row) return;
+    let rowFilled = false;
+    ['dryWeight', 'wetWeight', 'maxLoad'].forEach(key => {
+      const val = s[key];
+      if (val !== null && val !== undefined && val !== '') {
+        row.querySelector(`.${key}`).value = val;
+        rowFilled = true;
+      } else {
+        missingFields.push(`specimen ${i + 1} ${key}`);
+      }
+    });
+    if (rowFilled) filledCount++;
+  });
+  recalcSpecimens();
+
+  let msg = `Filled ${filledCount} of ${actualCount} specimen row(s). Area was left unchanged — it's not read from the photo.`;
+  if (warnings.length) msg += ` ${warnings.join('; ')}.`;
+  if (missingFields.length) msg += ` Missing/unclear: ${missingFields.join(', ')}.`;
+  statusEl.textContent = msg;
+}
+
+/* =========================================================================
+   Cube-specific wiring + init
+   ========================================================================= */
+function wireEvents(){
+  wireCommonEvents();
+  document.getElementById('specimenBody').addEventListener('input', (e) => {
+    if (e.target.tagName === 'INPUT') recalcSpecimens();
+  });
+  document.getElementById('copyPromptBtn').addEventListener('click', onCopyPrompt);
+  document.getElementById('applyJsonBtn').addEventListener('click', onApplyJson);
+  document.getElementById('copySpecimenPromptBtn').addEventListener('click', onCopySpecimenPrompt);
+  document.getElementById('applySpecimenJsonBtn').addEventListener('click', onApplySpecimenJson);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  populateMonthYear();
+  onConfigLoaded(); // builds the specimen table with fallback defaults immediately
+  renderSignatoryFields();
+  wireEvents();
+  loadConfig(); // refreshes CONFIG/NAMES, then calls onConfigLoaded() again with real defaults
+});
+
+/* =========================================================================
+   Document generation
+   ========================================================================= */
+async function buildDocx(){
+  const {
+    Document, Paragraph, TextRun, Table, TableRow, TableCell,
+    WidthType, AlignmentType, BorderStyle, VerticalAlign, LevelFormat
+  } = docx;
+
+  const FONT_SIZE = 22; // half-points; 22 = 11pt
+
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const noBorders = { top:noBorder, bottom:noBorder, left:noBorder, right:noBorder, insideHorizontal:noBorder, insideVertical:noBorder };
+  const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+  const gridBorders = { top:thinBorder, bottom:thinBorder, left:thinBorder, right:thinBorder, insideHorizontal:thinBorder, insideVertical:thinBorder };
+
+  function run(text, opts = {}){
+    return new TextRun({ text: text == null ? '' : String(text), bold: !!opts.bold, italics: !!opts.italics, size: opts.size || FONT_SIZE });
+  }
+
+  function cell(text, opts = {}){
+    return new TableCell({
+      width: opts.width ? { size: opts.width, type: WidthType.PERCENTAGE } : undefined,
+      verticalAlign: VerticalAlign.CENTER,
+      rowSpan: opts.rowSpan || undefined,
+      children: [ new Paragraph({
+        alignment: opts.align || AlignmentType.LEFT,
+        children: [ run(text, opts) ]
+      }) ]
+    });
+  }
+
+  const REF_NUMBERING = 'cube-report-refs';
+  const NOTES_NUMBERING = 'cube-report-notes';
+
+  const children = [];
+
+  // 1. Report No (left) and Date (right) on the same line — values only, no labels
+  const reportNo = composedReportNumber();
+  const reportDateFmt = fmtDate(document.getElementById('reportDate').value);
+  const reportLineTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: noBorders,
+    rows: [ new TableRow({ children: [
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [
+        new Paragraph({ alignment: AlignmentType.LEFT, children: [ run(reportNo, { bold: true }) ] })
+      ]}),
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [
+        new Paragraph({ alignment: AlignmentType.RIGHT, children: [ run(reportDateFmt) ] })
+      ]})
+    ]})]
+  });
+  children.push(reportLineTable);
+  children.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+
+  // 2. Addressee
+  children.push(new Paragraph({ children: [ run('To,') ], spacing: { after: 40 } }));
+  const addrLines = selectedAddress.address.split('\n').map(l => l.trim()).filter(Boolean);
+  addrLines.forEach((line, i) => {
+    children.push(new Paragraph({ children: [ run(line) ], spacing: { after: i === addrLines.length - 1 ? 200 : 0 } }));
+  });
+
+  // 3. Subject
+  children.push(new Paragraph({
+    spacing: { after: 200 },
+    children: [ run('Sub: Compressive Strength of Concrete Cubes - Results', { bold: true }) ]
+  }));
+
+  // 4. References — native Word numbered list, not typed "1." prefixes
+  const workDesc = document.getElementById('workDesc').value.trim();
+  const ref1 = orNotSpecified(workDesc);
+
+  const aeLetterRef = document.getElementById('aeLetterRef').value.trim();
+  const aeLetterDate = fmtDate(document.getElementById('aeLetterDate').value);
+  const ref2 = aeLetterRef
+    ? (aeLetterDate ? `${aeLetterRef} Letter from Assistant Engineer dated ${aeLetterDate}` : `${aeLetterRef} Letter from Assistant Engineer`)
+    : 'Not Specified';
+
+  const agreementNumber = document.getElementById('agreementNumber').value.trim();
+  const agreementDate = fmtDate(document.getElementById('agreementDate').value);
+  const ref3 = agreementNumber
+    ? (agreementDate ? `Agreement No ${agreementNumber} dated ${agreementDate}` : `Agreement No ${agreementNumber}`)
+    : 'Letter of request submitted to the department for testing';
+
+  const extraRef1 = document.getElementById('extraRef1').value.trim();
+  const extraRef2 = document.getElementById('extraRef2').value.trim();
+  const optionalExtras = [extraRef1, extraRef2].filter(Boolean);
+
+  const fixedIS516Ref = 'IS 516 (Part 1/Sec 1)- Hardened concrete methods of test part 1 testing of strength of hardened concrete section 1';
+
+  const allRefs = [ref1, ref2, ref3, ...optionalExtras, fixedIS516Ref];
+  children.push(new Paragraph({ children: [ run('Ref:') ], spacing: { after: 40 } }));
+  allRefs.forEach((ref, i) => {
+    children.push(new Paragraph({
+      numbering: { reference: REF_NUMBERING, level: 0 },
+      spacing: { after: i === allRefs.length - 1 ? 200 : 40 },
+      children: [ run(ref) ]
+    }));
+  });
+
+  // 5. Mix / Size / Casting / Testing table
+  const mixSpecRaw = document.getElementById('mixSpec').value.trim();
+  const castingDateRaw = fmtDate(document.getElementById('castingDate').value);
+  const mixSpec = mixSpecRaw ? `${mixSpecRaw}*` : 'Not Specified';
+  const castingDate = castingDateRaw ? `${castingDateRaw}*` : 'Not Specified';
+  const testingDate = fmtDate(document.getElementById('testingDate').value); // required
+  const hasStarredValue = Boolean(mixSpecRaw || castingDateRaw);
+
+  const infoTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: gridBorders,
+    rows: [
+      new TableRow({ children: [
+        cell('Mix Spec', { bold: true, width: 20 }),
+        cell(mixSpec, { width: 30 }),
+        cell('Size', { bold: true, width: 20 }),
+        cell('15cm x15cm x15cm', { width: 30 })
+      ]}),
+      new TableRow({ children: [
+        cell('Casting Date', { bold: true, width: 20 }),
+        cell(castingDate, { width: 30 }),
+        cell('Testing Date', { bold: true, width: 20 }),
+        cell(testingDate, { width: 30 })
+      ]})
+    ]
+  });
+  children.push(infoTable);
+
+  // 6. Date of Receipt of Specimen — sits close to the table above, font
+  // reduced by 1pt, spacing kept before the results table below.
+  const RECEIPT_LINE_FONT_SIZE = FONT_SIZE - 2;
+  const receiptDate = orNotSpecified(fmtDate(document.getElementById('receiptDate').value));
+  children.push(new Paragraph({
+    spacing: { before: 0, after: 200 },
+    children: [
+      run('Date of Receipt of Specimen: ', { bold: true, size: RECEIPT_LINE_FONT_SIZE }),
+      run(receiptDate, { size: RECEIPT_LINE_FONT_SIZE })
+    ]
+  }));
+
+  // 7. Results table — Mean Strength column merged into one cell spanning all specimen rows
+  const specimens = getSpecimenData();
+  const headerLabels = ['Sl No','Area of sample\n(sq.cm)','Dry Weight\n(kg)','Wet Weight\n(kg)','Maximum Load\n(kN)','Compressive\nStrength (MPa)','Mean Strength\n(MPa)','Variation from\nMean (%)'];
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: headerLabels.map(h => cell(h, { bold: true, align: AlignmentType.CENTER }))
+  });
+  const dataRows = specimens.map((s, i) => {
+    const rowCells = [
+      cell(i + 1, { align: AlignmentType.CENTER }),
+      cell(s.area, { align: AlignmentType.CENTER }),
+      cell(Number(s.dryWeight).toFixed(3), { align: AlignmentType.CENTER }),
+      cell(Number(s.wetWeight).toFixed(3), { align: AlignmentType.CENTER }),
+      cell(s.load, { align: AlignmentType.CENTER }),
+      cell(s.strength.toFixed(2), { align: AlignmentType.CENTER })
+    ];
+    if (i === 0) {
+      rowCells.push(cell(s.mean.toFixed(2), { align: AlignmentType.CENTER, rowSpan: specimens.length }));
+    }
+    rowCells.push(cell((s.variation > 0 ? '+' : '') + s.variation.toFixed(2) + '%', { align: AlignmentType.CENTER }));
+    return new TableRow({ children: rowCells });
+  });
+  const resultsTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: gridBorders,
+    rows: [headerRow, ...dataRows]
+  });
+  children.push(resultsTable);
+
+  if (hasStarredValue) {
+    children.push(new Paragraph({
+      spacing: { before: 100, after: 200 },
+      children: [ run('* As reported by the client via Ref 2', { italics: true, size: 18 }) ]
+    }));
+  }
+
+  // 9. NOTES — native numbered list, indented one step further right than
+  // References; the "NOTES:" heading itself stays unindented. Smaller font (9pt).
+  const NOTES_FONT_SIZE = 18; // half-points; 18 = 9pt
+  children.push(new Paragraph({
+    spacing: { after: 80 },
+    children: [ run('NOTES:', { bold: true }) ]
+  }));
+  const notes = [
+    'The result reported pertains only to the specimens submitted in the lab.',
+    '28th day individual test result shall not go below (fck – 3) MPa as per Table 11, IS456:2000',
+    'Variation of test results must not be more than ±15% of mean strength as per Cl 15.4 of IS456:2000',
+    'Mean strength must be at least equal to characteristic strength (fck)'
+  ];
+  notes.forEach((n, i) => {
+    children.push(new Paragraph({
+      numbering: { reference: NOTES_NUMBERING, level: 0 },
+      spacing: { after: i === notes.length - 1 ? 300 : 0 },
+      children: [ run(n, { size: NOTES_FONT_SIZE }) ]
+    }));
+  });
+
+  // 10. Signatory table
+  const signatories = getSignatories();
+  if (signatories.length) {
+    const colWidth = Math.floor(100 / signatories.length);
+    const sigCells = signatories.map(sig => new TableCell({
+      width: { size: colWidth, type: WidthType.PERCENTAGE },
+      children: [
+        new Paragraph({ text: '' }),
+        new Paragraph({ text: '' }),
+        new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.role, { bold: true }) ] }),
+        new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.name) ] })
+      ]
+    }));
+    children.push(new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: noBorders,
+      rows: [ new TableRow({ children: sigCells }) ]
+    }));
+  }
+
+  const doc = new Document({
+    styles: { default: { document: { run: { size: FONT_SIZE } } } },
+    numbering: {
+      config: [
+        {
+          reference: REF_NUMBERING,
+          levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 360, hanging: 360 } } } }]
+        },
+        {
+          reference: NOTES_NUMBERING,
+          levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 720, hanging: 360 } } } }]
+        }
+      ]
+    },
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: Math.round(4.4 * 566.929),    // 4.4 cm
+            bottom: Math.round(3.6 * 566.929), // 3.6 cm
+            left: 1440,                         // standard 1 in
+            right: 1440                         // standard 1 in
+          }
+        }
+      },
+      children
+    }]
+  });
+
+  return await docx.Packer.toBlob(doc);
+}
+</script>
+</body>
+</html>
