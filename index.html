@@ -161,7 +161,9 @@
       <button type="button" class="secondary" id="showAddAddressBtn">+ Add new address</button>
     </div>
     <div class="add-address-form" id="addAddressForm">
-      <label for="newAddressText">New address (multi-line, e.g. name / designation / office)</label>
+      <label for="newAddressShort">Address Short (optional — leave blank to auto-generate)</label>
+      <input type="text" id="newAddressShort" placeholder="e.g. PDY-AE">
+      <label for="newAddressText" style="margin-top:8px;">New address (multi-line, e.g. name / designation / office)</label>
       <textarea id="newAddressText" placeholder="The Assistant Engineer&#10;LID&amp;EW Division&#10;PDY"></textarea>
       <div class="toolbar">
         <button type="button" id="saveAddressBtn">Save &amp; use</button>
@@ -692,6 +694,7 @@ window.clearSelectedAddress = clearSelectedAddress;
 
 async function onSaveNewAddress(){
   const text = document.getElementById('newAddressText').value.trim();
+  const shortId = document.getElementById('newAddressShort').value.trim();
   if (!text) { alert('Enter an address first.'); return; }
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
     alert('Apps Script URL not configured — cannot save to the sheet.');
@@ -704,13 +707,14 @@ async function onSaveNewAddress(){
     const res = await fetch(`${APPS_SCRIPT_URL}?action=addAddress`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight
-      body: JSON.stringify({ address: text })
+      body: JSON.stringify({ address: text, addressId: shortId })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Save failed');
     selectAddress({ addressId: data.addressId, address: data.address });
     document.getElementById('addAddressForm').style.display = 'none';
     document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
   } catch (err) {
     alert(`Could not save address: ${err.message}`);
   } finally {
@@ -943,6 +947,7 @@ function resetForm(){
   document.getElementById('addressResults').style.display = 'none';
   document.getElementById('addAddressForm').style.display = 'none';
   document.getElementById('newAddressText').value = '';
+  document.getElementById('newAddressShort').value = '';
 
   renderSignatoryFields(); // re-applies auto-fill for any single-name slots
 
@@ -1059,6 +1064,7 @@ function wireCommonEvents(){
   document.getElementById('cancelAddAddressBtn').addEventListener('click', () => {
     document.getElementById('addAddressForm').style.display = 'none';
     document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
   });
   document.getElementById('saveAddressBtn').addEventListener('click', onSaveNewAddress);
 
@@ -1550,7 +1556,7 @@ async function buildDocx(){
 
   // 4. References — native Word numbered list, not typed "1." prefixes
   const workDesc = document.getElementById('workDesc').value.trim();
-  const ref1 = orNotSpecified(workDesc);
+  const ref1 = workDesc ? workDesc : null; // omitted entirely from the list if blank, not "Not Specified"
 
   const aeLetterRef = document.getElementById('aeLetterRef').value.trim();
   const aeLetterDate = fmtDate(document.getElementById('aeLetterDate').value);
@@ -1570,7 +1576,8 @@ async function buildDocx(){
 
   const fixedIS516Ref = 'IS 516 (Part 1/Sec 1)- Hardened concrete methods of test part 1 testing of strength of hardened concrete section 1';
 
-  const allRefs = [ref1, ref2, ref3, ...optionalExtras, fixedIS516Ref];
+  const mainRefs = [ref1, ref2, ref3].filter(Boolean); // ref2/ref3 always have a fallback string, ref1 is dropped entirely if blank
+  const allRefs = [...mainRefs, ...optionalExtras, fixedIS516Ref];
   children.push(new Paragraph({ children: [ run('Ref:') ], spacing: { after: 40 } }));
   allRefs.forEach((ref, i) => {
     children.push(new Paragraph({

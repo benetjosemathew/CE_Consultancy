@@ -161,7 +161,9 @@
       <button type="button" class="secondary" id="showAddAddressBtn">+ Add new address</button>
     </div>
     <div class="add-address-form" id="addAddressForm">
-      <label for="newAddressText">New address (multi-line, e.g. name / designation / office)</label>
+      <label for="newAddressShort">Address Short (optional — leave blank to auto-generate)</label>
+      <input type="text" id="newAddressShort" placeholder="e.g. PDY-AE">
+      <label for="newAddressText" style="margin-top:8px;">New address (multi-line, e.g. name / designation / office)</label>
       <textarea id="newAddressText" placeholder="The Assistant Engineer&#10;LID&amp;EW Division&#10;PDY"></textarea>
       <div class="toolbar">
         <button type="button" id="saveAddressBtn">Save &amp; use</button>
@@ -217,8 +219,8 @@
     <h2>4. Brick Details</h2>
     <div class="row">
       <div class="field narrow">
-        <label for="brickClass">Brick Class *</label>
-        <input type="text" id="brickClass" placeholder="e.g. 7.5">
+        <label for="brickClass">Brick Class</label>
+        <input type="text" id="brickClass" placeholder="e.g. 7.5 (leave blank if not known — a class will be estimated from strength)">
       </div>
       <div class="field">
         <label for="nominalSize">Nominal Size</label>
@@ -743,6 +745,7 @@ window.clearSelectedAddress = clearSelectedAddress;
 
 async function onSaveNewAddress(){
   const text = document.getElementById('newAddressText').value.trim();
+  const shortId = document.getElementById('newAddressShort').value.trim();
   if (!text) { alert('Enter an address first.'); return; }
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
     alert('Apps Script URL not configured — cannot save to the sheet.');
@@ -755,13 +758,14 @@ async function onSaveNewAddress(){
     const res = await fetch(`${APPS_SCRIPT_URL}?action=addAddress`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight
-      body: JSON.stringify({ address: text })
+      body: JSON.stringify({ address: text, addressId: shortId })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Save failed');
     selectAddress({ addressId: data.addressId, address: data.address });
     document.getElementById('addAddressForm').style.display = 'none';
     document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
   } catch (err) {
     alert(`Could not save address: ${err.message}`);
   } finally {
@@ -994,6 +998,7 @@ function resetForm(){
   document.getElementById('addressResults').style.display = 'none';
   document.getElementById('addAddressForm').style.display = 'none';
   document.getElementById('newAddressText').value = '';
+  document.getElementById('newAddressShort').value = '';
 
   renderSignatoryFields(); // re-applies auto-fill for any single-name slots
 
@@ -1110,6 +1115,7 @@ function wireCommonEvents(){
   document.getElementById('cancelAddAddressBtn').addEventListener('click', () => {
     document.getElementById('addAddressForm').style.display = 'none';
     document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
   });
   document.getElementById('saveAddressBtn').addEventListener('click', onSaveNewAddress);
 
@@ -1294,7 +1300,8 @@ function validateForm(){
   if (!document.getElementById('reportYear').value.trim()) errors.push('Report year is required.');
   if (!document.getElementById('reportDate').value) errors.push('Report date is required.');
   if (!selectedAddress) errors.push('Please select or add an addressee.');
-  if (!document.getElementById('brickClass').value.trim()) errors.push('Brick Class is required.');
+  // Brick Class is optional — if left blank, the docx shows "Not Specified"
+  // and NOTES estimates a class from the mean compressive strength instead.
   if (!document.getElementById('testingDate').value) errors.push('Date of Testing is required.');
 
   const sig1Select = document.getElementById('sigSelect1');
@@ -1656,6 +1663,16 @@ function joinWithAnd(items){
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
+// Standard IS 1077 declared class values for burnt clay bricks (N/mm²).
+// Used only when the user leaves Brick Class blank — picks the highest
+// class the mean compressive strength would qualify for.
+function guessBrickClass(meanStrength){
+  const classes = [3.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 25, 30, 35, 40];
+  let guessed = null;
+  for (const c of classes) { if (meanStrength >= c) guessed = c; }
+  return guessed;
+}
+
 async function buildDocx(){
   const {
     Document, Paragraph, TextRun, Table, TableRow, TableCell,
@@ -1717,9 +1734,11 @@ async function buildDocx(){
   }));
 
   // 4. References — same fallback conventions as the cube report, plus one
-  // IS 3495 reference per selected test (renumbered to whichever are chosen)
+  // MERGED IS 3495 reference covering whichever parts are relevant (the base
+  // code is the same standard; only the Part/determination differs, so
+  // listing it once with the relevant parts named saves space).
   const workDesc = document.getElementById('workDesc').value.trim();
-  const ref1 = orNotSpecified(workDesc);
+  const ref1 = workDesc ? workDesc : null; // omitted entirely from the list if blank, not "Not Specified"
 
   const aeLetterRef = document.getElementById('aeLetterRef').value.trim();
   const aeLetterDate = fmtDate(document.getElementById('aeLetterDate').value);
@@ -1733,16 +1752,20 @@ async function buildDocx(){
     ? (agreementDate ? `Agreement No ${agreementNumber} dated ${agreementDate}` : `Agreement No ${agreementNumber}`)
     : 'Letter of request submitted to the department for testing';
 
-  const standardRefs = [];
-  if (sel.compressive) standardRefs.push('IS 3495 (Part 1):1992 - Methods of tests of burnt clay building bricks, Part 1 Determination of compressive strength');
-  if (sel.absorption) standardRefs.push('IS 3495 (Part 2):1992 - Methods of tests of burnt clay building bricks, Part 2 Determination of water absorption');
-  if (sel.efflorescence) standardRefs.push('IS 3495 (Part 3):1992 - Methods of tests of burnt clay building bricks, Part 3 Determination of efflorescence');
+  const partLabels = [];
+  if (sel.compressive) partLabels.push('Part 1 - Determination of compressive strength');
+  if (sel.absorption) partLabels.push('Part 2 - Determination of water absorption');
+  if (sel.efflorescence) partLabels.push('Part 3 - Determination of efflorescence');
+  const standardRefs = partLabels.length
+    ? [`IS 3495:1992 - Methods of tests of burnt clay building bricks (${partLabels.join('; ')})`]
+    : [];
 
   const extraRef1 = document.getElementById('extraRef1').value.trim();
   const extraRef2 = document.getElementById('extraRef2').value.trim();
   const optionalExtras = [extraRef1, extraRef2].filter(Boolean);
 
-  const allRefs = [ref1, ref2, ref3, ...standardRefs, ...optionalExtras];
+  const mainRefs = [ref1, ref2, ref3].filter(Boolean); // ref2/ref3 always have a fallback string, ref1 is dropped entirely if blank
+  const allRefs = [...mainRefs, ...standardRefs, ...optionalExtras];
   children.push(new Paragraph({ children: [ run('Ref:') ], spacing: { after: 40 } }));
   allRefs.forEach((ref, i) => {
     children.push(new Paragraph({
@@ -1752,12 +1775,11 @@ async function buildDocx(){
     }));
   });
 
-  // Ref numbers for each selected test's standard reference (for the "(Ref N)" section labels)
-  let refCursor = 4; // refs 1-3 always occupy slots 1-3
-  const refNumbers = {};
-  if (sel.compressive) refNumbers.compressive = refCursor++;
-  if (sel.absorption) refNumbers.absorption = refCursor++;
-  if (sel.efflorescence) refNumbers.efflorescence = refCursor++;
+  // Ref number for the section labels — all three tests point at the SAME
+  // merged IS 3495 reference now, since it's one reference line covering
+  // whichever parts are relevant.
+  const mergedRefNumber = standardRefs.length ? mainRefs.length + 1 : null;
+  const refNumbers = { compressive: mergedRefNumber, absorption: mergedRefNumber, efflorescence: mergedRefNumber };
 
   // Section letters, in the same fixed priority order (Compressive, Absorption, Efflorescence)
   const letters = ['A', 'B', 'C'];
@@ -1768,9 +1790,12 @@ async function buildDocx(){
   if (sel.efflorescence) sectionLetters.efflorescence = letters[letterCursor++];
 
   // 5. Brick Class / Nominal Size / Source-Supplier / Testing Date table
-  const brickClass = document.getElementById('brickClass').value.trim();
+  const brickClassRaw = document.getElementById('brickClass').value.trim();
+  const sourceSupplierRaw = document.getElementById('sourceSupplier').value.trim();
+  const brickClass = brickClassRaw ? `${brickClassRaw}*` : 'Not Specified';
+  const sourceSupplier = sourceSupplierRaw ? `${sourceSupplierRaw}*` : 'Not Specified';
+  const hasStarredValue = Boolean(brickClassRaw || sourceSupplierRaw);
   const nominalSize = orNotSpecified(document.getElementById('nominalSize').value);
-  const sourceSupplier = orNotSpecified(document.getElementById('sourceSupplier').value);
   const testingDate = fmtDate(document.getElementById('testingDate').value); // required
 
   children.push(new Table({
@@ -1800,8 +1825,10 @@ async function buildDocx(){
   }));
 
   // 7A. Compressive Strength
+  let compressiveMeanForNotes = null; // captured here for the NOTES section below
   if (sel.compressive) {
     const data = getCompressiveData();
+    compressiveMeanForNotes = data.length ? data[0].mean : null;
     children.push(new Paragraph({
       spacing: { before: 100, after: 100 },
       children: [ run(`${sectionLetters.compressive}. Compressive Strength (Ref ${refNumbers.compressive})`, { bold: true }) ]
@@ -1865,16 +1892,34 @@ async function buildDocx(){
     }));
   }
 
+  if (hasStarredValue) {
+    children.push(new Paragraph({
+      spacing: { before: 100, after: 200 },
+      children: [ run('* As reported by the client via Ref 2', { italics: true, size: 18 }) ]
+    }));
+  }
+
   // 9. NOTES — native numbered list, same convention as the cube report;
   // only the notes relevant to the selected tests are included.
   const NOTES_FONT_SIZE = 18; // half-points; 18 = 9pt
   children.push(new Paragraph({ spacing: { before: 200, after: 80 }, children: [ run('NOTES:', { bold: true }) ] }));
   const notes = ['The results reported pertain only to the specimens submitted in the lab.'];
   if (sel.compressive) {
-    notes.push(`As per IS 1077, average compressive strength of the sample shall not be less than the declared class value (${brickClass || 'declared'} N/mm²), and no individual specimen shall fall below 80% of the class value.`);
+    if (brickClassRaw) {
+      notes.push(`As per IS 1077, average compressive strength of the sample shall not be less than the declared class value (${brickClassRaw} N/mm²), and no individual specimen shall fall below 80% of the class value.`);
+    } else if (compressiveMeanForNotes !== null && !isNaN(compressiveMeanForNotes)) {
+      const guessedClass = guessBrickClass(compressiveMeanForNotes);
+      if (guessedClass !== null) {
+        notes.push(`Declared class not specified — based on the mean compressive strength obtained (${compressiveMeanForNotes.toFixed(2)} N/mm²), the sample falls under Class ${guessedClass} as per IS 1077.`);
+      } else {
+        notes.push(`Declared class not specified — the mean compressive strength obtained (${compressiveMeanForNotes.toFixed(2)} N/mm²) does not meet the minimum class requirement (Class 3.5) as per IS 1077.`);
+      }
+    } else {
+      notes.push('Declared class not specified.');
+    }
   }
   if (sel.absorption) {
-    notes.push(`As per IS 1077, water absorption (24-hour cold water immersion) shall not exceed 20% by weight for Class ${brickClass || 'declared'} bricks.`);
+    notes.push('As per IS 1077, water absorption (24-hour cold water immersion) shall not exceed 20% by weight.');
   }
   if (sel.efflorescence) {
     notes.push('As per IS 3495 (Part 3), efflorescence rating of "Nil" or "Slight" is acceptable; "Moderate", "Heavy" or "Serious" ratings are not acceptable for use in exposed masonry.');
