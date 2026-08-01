@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Concrete Cube Test Certificate Generator</title>
+<title>Paving Block Test Certificate Generator</title>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <style>
   :root{
@@ -106,11 +106,11 @@
 <body>
 <div class="wrap">
   <div class="site-nav">
-    <a href="index.html" class="current">Cube Test</a>
+    <a href="index.html">Cube Test</a>
     <a href="brick.html">Brick Test</a>
-    <a href="paving.html">Paving Block Test</a>
+    <a href="paving.html" class="current">Paving Block Test</a>
   </div>
-  <h1>Compressive Strength of Concrete Cubes — Report Generator</h1>
+  <h1>Precast Concrete Paving Blocks — Report Generator</h1>
   <p class="subtitle">Fills a lab test certificate .docx from your data. Prints on existing letterhead — no header/footer is added.</p>
 
   <div class="card">
@@ -139,7 +139,7 @@
         <input type="date" id="reportDate">
       </div>
     </div>
-    <div class="hint">Composed report number:</div>
+    <div class="hint">Composed report number (numbering is continuous with the Cube reports — same lab, one sequence):</div>
     <div class="preview-box" id="reportNumPreview">—</div>
     <div class="row" style="margin-top:10px;">
       <div class="field narrow">
@@ -179,13 +179,13 @@
     <div class="row">
       <div class="field">
         <label for="workDesc">Work Description</label>
-        <input type="text" id="workDesc" placeholder="e.g. SO 155/25-26 PDY Thottappalli Kalarikkal road concreting ward 18">
+        <input type="text" id="workDesc" placeholder="e.g. SO 188/25-26 PDY Erattupetta town square footpath paving work">
       </div>
     </div>
     <div class="row">
       <div class="field">
         <label for="aeLetterRef">AE Letter Reference</label>
-        <input type="text" id="aeLetterRef" placeholder="e.g. 19/AE/LID&amp;EW/PDY/2025-26">
+        <input type="text" id="aeLetterRef" placeholder="e.g. 33/AE/RD/PDY/2025-26">
       </div>
       <div class="field narrow">
         <label for="aeLetterDate">AE Letter Date</label>
@@ -195,14 +195,14 @@
     <div class="row">
       <div class="field">
         <label for="agreementNumber">Agreement Number</label>
-        <input type="text" id="agreementNumber" placeholder="e.g. 19/AE/LID&amp;EW/PDY/2025-26">
+        <input type="text" id="agreementNumber" placeholder="e.g. 33/AE/RD/PDY/2025-26">
       </div>
       <div class="field narrow">
         <label for="agreementDate">Agreement Date</label>
         <input type="date" id="agreementDate">
       </div>
     </div>
-    <div class="hint">Two optional extra references (only appear in the document if filled in — no "Not Specified" placeholder for these two):</div>
+    <div class="hint">Two optional extra references (only appear in the document if filled in):</div>
     <div class="row">
       <div class="field">
         <label for="extraRef1">Extra Reference 1 (optional)</label>
@@ -213,22 +213,28 @@
         <input type="text" id="extraRef2" placeholder="Free text">
       </div>
     </div>
-    <div class="hint">The final reference — IS 516 (Part 1/Sec 1) — is fixed and always included last, whatever the numbering above works out to.</div>
+    <div class="hint">The IS 15658 reference (with Annex C/D as relevant) is added automatically below, based on whichever tests you select.</div>
   </div>
 
   <div class="card">
-    <h2>4. Mix, Casting &amp; Testing</h2>
+    <h2>4. Paving Block Details</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="blockGrade">Block Grade</label>
+        <input type="text" id="blockGrade" placeholder="e.g. M35 (leave blank if not known — a grade will be estimated from strength)">
+      </div>
+      <div class="field">
+        <label for="nominalSize">Nominal Size</label>
+        <input type="text" id="nominalSize" value="200 x 100 x 80 mm">
+      </div>
+    </div>
     <div class="row">
       <div class="field">
-        <label for="mixSpec">Mix Spec</label>
-        <input type="text" id="mixSpec" placeholder="e.g. M20">
+        <label for="sourceSupplier">Source / Supplier</label>
+        <input type="text" id="sourceSupplier" placeholder="e.g. Erattupetta Precast Yard">
       </div>
       <div class="field">
-        <label for="castingDate">Casting Date</label>
-        <input type="date" id="castingDate">
-      </div>
-      <div class="field">
-        <label for="testingDate">Testing Date *</label>
+        <label for="testingDate">Date of Testing *</label>
         <input type="date" id="testingDate">
       </div>
     </div>
@@ -238,41 +244,117 @@
         <input type="date" id="receiptDate">
       </div>
     </div>
-    <div class="hint">Specimen size is fixed at 15cm x15cm x15cm.</div>
   </div>
 
   <div class="card">
-    <h2>5. Specimen Results (1–20 specimens)</h2>
-    <table class="specimen" id="specimenTable">
+    <h2>5. Choice of Tests (at least one required)</h2>
+    <div class="checkbox-row">
+      <label><input type="checkbox" id="testCompressive" checked> Compressive Strength</label>
+      <label><input type="checkbox" id="testAbsorption" checked> Water Absorption</label>
+      <label><input type="checkbox" id="testAbrasion" checked> Abrasion Resistance</label>
+    </div>
+  </div>
+
+  <div class="card" id="compressiveCard">
+    <h2>6A. Compressive Strength — Specimens</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="paverThickness">Nominal Block Thickness (mm) *</label>
+        <input type="number" step="any" id="paverThickness" placeholder="e.g. 80">
+      </div>
+      <div class="field narrow">
+        <label for="paverArris">Block Edge *</label>
+        <select id="paverArris">
+          <option value="">-- Select --</option>
+          <option value="plain">Plain</option>
+          <option value="chamfered">Arrised / Chamfered</option>
+        </select>
+      </div>
+      <div class="field narrow">
+        <label>Correction Factor (IS 15658 Table 5)</label>
+        <div class="preview-box" id="correctionFactorDisplay" style="margin-top:0;">—</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label><input type="checkbox" id="correctionFactorManualToggle" style="width:auto;"> Override with a manually entered factor (e.g. thickness outside the 50–120mm table range)</label>
+      </div>
+    </div>
+    <div class="row" id="correctionFactorManualRow" style="display:none;">
+      <div class="field narrow">
+        <label for="correctionFactorManual">Manual Correction Factor</label>
+        <input type="number" step="any" id="correctionFactorManual" placeholder="e.g. 0.87">
+      </div>
+    </div>
+    <div class="hint">Applied identically to every specimen's apparent strength — cited in the document as a note rather than a repeated column. Table 5 values are looked up exactly at 50/60/80/100/120mm and linearly interpolated in between, per the standard's own note.</div>
+    <table class="specimen" id="compressiveTable">
       <thead>
         <tr>
-          <th>Sl No</th>
-          <th>Area (sq.cm)</th>
-          <th>Dry Weight (kg)</th>
-          <th>Wet Weight (kg)</th>
-          <th>Max Load (kN)</th>
-          <th>Strength (MPa)</th>
-          <th>Mean (MPa)</th>
-          <th>Variation (%)</th>
-          <th></th>
+          <th>Sl No</th><th>Area (sq.cm)</th><th>Weight (kg)</th><th>Load (kN)</th>
+          <th>Apparent Strength (N/mm²)</th><th>Corrected Strength (N/mm²)</th><th>Average (N/mm²)</th><th></th>
         </tr>
       </thead>
-      <tbody id="specimenBody"><!-- filled by JS --></tbody>
+      <tbody id="compressiveBody"></tbody>
     </table>
     <div class="toolbar">
-      <button type="button" class="secondary" id="addSpecimenBtn">+ Add specimen</button>
-      <span class="hint" id="specimenCountHint"></span>
+      <button type="button" class="secondary" id="addCompressiveBtn">+ Add specimen</button>
+      <span class="hint" id="compressiveCountHint"></span>
+    </div>
+  </div>
+
+  <div class="card" id="absorptionCard">
+    <h2>6B. Water Absorption — Specimens</h2>
+    <table class="specimen" id="absorptionTable">
+      <thead>
+        <tr>
+          <th>Sl No</th><th>Dry Weight (kg)</th><th>Wet Weight (kg)</th>
+          <th>Absorption (%)</th><th>Mean Absorption (%)</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="absorptionBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addAbsorptionBtn">+ Add specimen</button>
+      <span class="hint" id="absorptionCountHint"></span>
+    </div>
+  </div>
+
+  <div class="card" id="abrasionCard">
+    <h2>6C. Abrasion Resistance (Wide-Wheel Method) — Specimens</h2>
+    <p class="hint">Global parameters (applied to every specimen below):</p>
+    <div class="row">
+      <div class="field narrow">
+        <label for="abrasionSurfaceArea">Surface Area (sq.mm) *</label>
+        <input type="number" step="any" id="abrasionSurfaceArea" placeholder="e.g. 4225">
+      </div>
+      <div class="field narrow">
+        <label for="abrasionInitialHeight">Initial Height (mm) *</label>
+        <input type="number" step="any" id="abrasionInitialHeight" placeholder="e.g. 79.5">
+      </div>
+      <div class="field narrow">
+        <label for="abrasionBlockWeight">Block Weight (g) *</label>
+        <input type="number" step="any" id="abrasionBlockWeight" placeholder="e.g. 784.91">
+      </div>
+      <div class="field narrow">
+        <label>Density (computed)</label>
+        <div class="preview-box" id="abrasionDensityDisplay" style="margin-top:0;">—</div>
+      </div>
+    </div>
+    <div id="abrasionSpecimensContainer"></div>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addAbrasionSpecimenBtn">+ Add specimen</button>
+      <span class="hint" id="abrasionCountHint"></span>
     </div>
   </div>
 
   <div class="card">
-    <h2>6. Signatories</h2>
+    <h2>7. Signatories</h2>
     <p class="hint">Role labels come from Config; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet.</p>
-    <div id="signatoryFields"><!-- filled by JS --></div>
+    <div id="signatoryFields"></div>
   </div>
 
   <div class="card">
-    <h2>7. Generate</h2>
+    <h2>8. Generate</h2>
     <div class="toolbar">
       <button id="generateBtn">Generate Report (.docx)</button>
       <button type="button" class="secondary" id="newReportBtn" style="display:none;">Start New Report</button>
@@ -288,14 +370,14 @@
 
     <div class="card">
       <h2>Auto-fill from Engineer Letter (optional, LLM-assisted)</h2>
-      <p class="hint">If you have a letter from the Assistant Engineer as a PDF: copy the prompt below, paste it into an LLM chat (e.g. Claude) along with the PDF attached, then paste the JSON it returns here to auto-fill the matching fields above.</p>
+      <p class="hint">If you have a letter from the Assistant Engineer as a PDF: copy the prompt below, paste it into an LLM chat along with the PDF attached, then paste the JSON it returns here.</p>
       <div class="toolbar">
         <button type="button" class="secondary" id="copyPromptBtn">Copy extraction prompt</button>
       </div>
       <div class="row" style="margin-top:10px;">
         <div class="field" style="flex:1 1 100%;">
           <label for="llmJsonInput">Paste returned JSON here</label>
-          <textarea id="llmJsonInput" style="min-height:100px;" placeholder='{ "workDescription": "...", "aeLetterRef": "...", ... }'></textarea>
+          <textarea id="llmJsonInput" style="min-height:100px;" placeholder='{ "workDescription": "...", "blockGrade": "...", ... }'></textarea>
         </div>
       </div>
       <div class="toolbar">
@@ -305,15 +387,15 @@
     </div>
 
     <div class="card">
-      <h2>Auto-fill Specimen Table from Log Book Photo (LLM-assisted)</h2>
-      <p class="hint">Copy the prompt below, paste it into an LLM chat along with a photo of the log book page (rotated the right way up, or let the LLM rotate it), then paste the JSON it returns here. Only Dry Weight, Wet Weight, and Max Load are read in — Area is left as whatever's already in the form, and any Compressive Strength already written in the log book is ignored (it's recalculated here instead).</p>
+      <h2>Auto-fill Compressive Specimens from Log Book Photo (LLM-assisted)</h2>
+      <p class="hint">Copy the prompt below, paste it into an LLM chat along with a photo of the log book page, then paste the JSON it returns here. Scoped to Compressive Strength data only (Area, Weight, Load) — Water Absorption and Abrasion Resistance aren't auto-filled this way.</p>
       <div class="toolbar">
         <button type="button" class="secondary" id="copySpecimenPromptBtn">Copy extraction prompt</button>
       </div>
       <div class="row" style="margin-top:10px;">
         <div class="field" style="flex:1 1 100%;">
           <label for="specimenJsonInput">Paste returned JSON here</label>
-          <textarea id="specimenJsonInput" style="min-height:100px;" placeholder='{ "specimens": [ { "dryWeight": 8.308, "wetWeight": 8.312, "maxLoad": 412 } ] }'></textarea>
+          <textarea id="specimenJsonInput" style="min-height:100px;" placeholder='{ "compressive": [ { "area": 200, "weight": 8.4, "load": 818 } ] }'></textarea>
         </div>
       </div>
       <div class="toolbar">
@@ -354,7 +436,7 @@
    Page identity — must be set before the shared script include below
    ========================================================================= */
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKj68-aD6FZQfuBHSHKGQ1U_jB7idm7iR6VtQww7w74PzS--tAuSGCfl6ylbt2d6Yb/exec';
-const REPORT_TYPE = 'Cube';
+const REPORT_TYPE = 'PavingBlock';
 const MIN_SPECIMENS = 1;
 const MAX_SPECIMENS = 20;
 const DEFAULT_INITIAL_SPECIMENS = 3;
@@ -736,8 +818,8 @@ function toggleAdvancedSection(){
 }
 
 /* =========================================================================
-   Generic specimen-table controller — used for the cube's one table and
-   each of the brick's three (Compressive / Water Absorption / Efflorescence)
+   Generic specimen-table controller — used across cube/brick/paving pages
+   for any row-based specimen table (Compressive, Water Absorption, etc.)
    ========================================================================= */
 function createSpecimenTable(opts){
   const min = opts.min || 1;
@@ -1094,81 +1176,292 @@ function wireCommonEvents(){
 
 
 /* =========================================================================
-   Cube-specific: specimen table
+   Paving-block-specific: compressive & absorption tables, plus the
+   custom abrasion specimen-block system (not a simple row table)
    ========================================================================= */
-let cubeTable; // createSpecimenTable() controller, built on DOMContentLoaded
+let compressiveTable, absorptionTable;
 
-function buildCubeRowCells(){
-  const defaultArea = CONFIG.DefaultArea || 225;
+// IS 15658:2006 Table 5 — Correction Factors for Thickness and Arris/Chamfer
+// of Paver Block, for Calculation of Compressive Strength. Transcribed
+// directly from the standard (verified against an independent source citing
+// 60mm chamfered = 1.06). "For other thickness of paver blocks between 50 mm
+// and 120 mm, linear extrapolation of concrete factor shall be made" — the
+// standard's own wording, though what's actually needed for in-between
+// values is linear interpolation between the two nearest tabulated points,
+// which is what's implemented below.
+const CORRECTION_FACTOR_TABLE = [
+  { thickness: 50, plain: 0.96, chamfered: 1.03 },
+  { thickness: 60, plain: 1.00, chamfered: 1.06 },
+  { thickness: 80, plain: 1.12, chamfered: 1.18 },
+  { thickness: 100, plain: 1.18, chamfered: 1.24 },
+  { thickness: 120, plain: 1.28, chamfered: 1.34 }
+];
+
+function lookupCorrectionFactor(thickness, arris){
+  if (isNaN(thickness) || (arris !== 'plain' && arris !== 'chamfered')) return NaN;
+  if (thickness < 50 || thickness > 120) return NaN; // outside the table's stated range
+  const exact = CORRECTION_FACTOR_TABLE.find(r => r.thickness === thickness);
+  if (exact) return exact[arris];
+  for (let i = 0; i < CORRECTION_FACTOR_TABLE.length - 1; i++) {
+    const lo = CORRECTION_FACTOR_TABLE[i], hi = CORRECTION_FACTOR_TABLE[i + 1];
+    if (thickness > lo.thickness && thickness < hi.thickness) {
+      const frac = (thickness - lo.thickness) / (hi.thickness - lo.thickness);
+      return lo[arris] + frac * (hi[arris] - lo[arris]);
+    }
+  }
+  return NaN;
+}
+
+function updateCorrectionFactorDisplay(){
+  const thickness = parseFloat(document.getElementById('paverThickness').value);
+  const arris = document.getElementById('paverArris').value;
+  const factor = lookupCorrectionFactor(thickness, arris);
+  const el = document.getElementById('correctionFactorDisplay');
+  if (isNaN(factor)) {
+    el.textContent = (thickness < 50 || thickness > 120) && !isNaN(thickness)
+      ? 'Out of table range — use manual override'
+      : '—';
+  } else {
+    el.textContent = factor.toFixed(3);
+  }
+}
+
+// The value actually used everywhere else — either the Table 5 lookup, or
+// the manual override if the user has switched that on.
+function getEffectiveCorrectionFactor(){
+  const manualOn = document.getElementById('correctionFactorManualToggle').checked;
+  if (manualOn) {
+    return parseFloat(document.getElementById('correctionFactorManual').value);
+  }
+  const thickness = parseFloat(document.getElementById('paverThickness').value);
+  const arris = document.getElementById('paverArris').value;
+  return lookupCorrectionFactor(thickness, arris);
+}
+
+function buildCompressiveRowCells(){
   return `
-    <td><input type="number" step="any" class="area" value="${defaultArea}"></td>
+    <td><input type="number" step="any" class="area"></td>
+    <td><input type="number" step="any" class="weight"></td>
+    <td><input type="number" step="any" class="maxLoad"></td>
+    <td class="calc apparent">—</td>
+    <td class="calc corrected">—</td>
+    <td class="calc average">—</td>
+  `;
+}
+function buildAbsorptionRowCells(){
+  return `
     <td><input type="number" step="any" class="dryWeight"></td>
     <td><input type="number" step="any" class="wetWeight"></td>
-    <td><input type="number" step="any" class="maxLoad"></td>
-    <td class="calc strength">—</td>
+    <td class="calc absorption">—</td>
     <td class="calc mean">—</td>
-    <td class="calc variation">—</td>
   `;
 }
 
-function recalcSpecimens(){
-  const rows = cubeTable.rows();
+function recalcCompressive(){
+  const rows = compressiveTable.rows();
+  const factor = getEffectiveCorrectionFactor();
   const raw = rows.map(row => ({
     area: parseFloat(row.querySelector('.area').value),
     load: parseFloat(row.querySelector('.maxLoad').value)
   }));
-  const strengths = raw.map(r => (r.area > 0 && !isNaN(r.load)) ? (r.load * 10) / r.area : NaN);
-  const validStrengths = strengths.filter(s => !isNaN(s));
-  const mean = validStrengths.length ? validStrengths.reduce((a, b) => a + b, 0) / validStrengths.length : NaN;
-
+  const apparents = raw.map(r => (r.area > 0 && !isNaN(r.load)) ? (r.load * 10) / r.area : NaN);
+  const corrected = apparents.map(a => (!isNaN(a) && !isNaN(factor)) ? a * factor : NaN);
+  const valid = corrected.filter(c => !isNaN(c));
+  const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
   rows.forEach((row, i) => {
-    const s = strengths[i];
-    row.querySelector('.strength').textContent = isNaN(s) ? '—' : s.toFixed(2);
-    row.querySelector('.mean').textContent = isNaN(mean) ? '—' : mean.toFixed(2);
-    if (isNaN(s) || isNaN(mean) || mean === 0) {
-      row.querySelector('.variation').textContent = '—';
-    } else {
-      const v = ((s - mean) / mean) * 100;
-      row.querySelector('.variation').textContent = (v > 0 ? '+' : '') + v.toFixed(2) + '%';
-    }
+    row.querySelector('.apparent').textContent = isNaN(apparents[i]) ? '—' : apparents[i].toFixed(2);
+    row.querySelector('.corrected').textContent = isNaN(corrected[i]) ? '—' : corrected[i].toFixed(2);
+    row.querySelector('.average').textContent = isNaN(mean) ? '—' : mean.toFixed(2);
   });
 }
 
-function getSpecimenData(){
-  const rows = cubeTable.rows();
+function recalcAbsorption(){
+  const rows = absorptionTable.rows();
   const raw = rows.map(row => ({
-    area: parseFloat(row.querySelector('.area').value),
-    dryWeight: parseFloat(row.querySelector('.dryWeight').value),
-    wetWeight: parseFloat(row.querySelector('.wetWeight').value),
-    load: parseFloat(row.querySelector('.maxLoad').value)
+    dry: parseFloat(row.querySelector('.dryWeight').value),
+    wet: parseFloat(row.querySelector('.wetWeight').value)
   }));
-  const strengths = raw.map(r => (r.area && r.load) ? (r.load * 10) / r.area : NaN);
-  const mean = strengths.reduce((a, b) => a + b, 0) / strengths.length;
-  return raw.map((r, i) => ({
-    ...r,
-    strength: strengths[i],
-    mean: mean,
-    variation: ((strengths[i] - mean) / mean) * 100
-  }));
+  const absorptions = raw.map(r => (r.dry > 0 && !isNaN(r.wet)) ? ((r.wet - r.dry) / r.dry) * 100 : NaN);
+  const valid = absorptions.filter(a => !isNaN(a));
+  const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
+  rows.forEach((row, i) => {
+    row.querySelector('.absorption').textContent = isNaN(absorptions[i]) ? '—' : absorptions[i].toFixed(2);
+    row.querySelector('.mean').textContent = isNaN(mean) ? '—' : mean.toFixed(2);
+  });
 }
 
-function onConfigLoaded(){
-  if (!cubeTable) {
-    cubeTable = createSpecimenTable({
-      bodyId: 'specimenBody',
-      addBtnId: 'addSpecimenBtn',
-      countHintId: 'specimenCountHint',
-      min: MIN_SPECIMENS,
-      max: MAX_SPECIMENS,
-      buildRowCells: buildCubeRowCells,
-      onChange: recalcSpecimens
-    });
-  }
-  cubeTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+function getCompressiveData(){
+  const factor = getEffectiveCorrectionFactor();
+  return compressiveTable.rows().map(row => {
+    const area = parseFloat(row.querySelector('.area').value);
+    const weight = parseFloat(row.querySelector('.weight').value);
+    const load = parseFloat(row.querySelector('.maxLoad').value);
+    const apparent = (area > 0) ? (load * 10) / area : NaN;
+    const corrected = (!isNaN(apparent) && !isNaN(factor)) ? apparent * factor : NaN;
+    return { area, weight, load, apparent, corrected };
+  }).map((s, i, arr) => {
+    const valid = arr.map(x => x.corrected).filter(v => !isNaN(v));
+    const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
+    return { ...s, mean };
+  });
+}
+
+function getAbsorptionData(){
+  return absorptionTable.rows().map(row => {
+    const dryWeight = parseFloat(row.querySelector('.dryWeight').value);
+    const wetWeight = parseFloat(row.querySelector('.wetWeight').value);
+    const absorption = (dryWeight > 0) ? ((wetWeight - dryWeight) / dryWeight) * 100 : NaN;
+    return { dryWeight, wetWeight, absorption };
+  }).map((s, i, arr) => {
+    const valid = arr.map(x => x.absorption).filter(v => !isNaN(v));
+    const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
+    return { ...s, mean };
+  });
+}
+
+/* ---- Abrasion: custom specimen-block system (not a simple row table) ---- */
+const ABRASION_CYCLES = [0, 4, 8, 12, 16];
+const MIN_ABRASION_SPECIMENS = 1;
+const MAX_ABRASION_SPECIMENS = 20;
+
+function getAbrasionDensity(){
+  const area = parseFloat(document.getElementById('abrasionSurfaceArea').value);
+  const height = parseFloat(document.getElementById('abrasionInitialHeight').value);
+  const weight = parseFloat(document.getElementById('abrasionBlockWeight').value);
+  const volume = area * height;
+  return (volume > 0 && !isNaN(weight)) ? weight / volume : NaN; // g/mm3
+}
+
+function updateAbrasionDensityDisplay(){
+  const density = getAbrasionDensity();
+  document.getElementById('abrasionDensityDisplay').textContent = isNaN(density) ? '—' : `${density.toFixed(6)} g/mm³`;
+}
+
+function buildAbrasionSpecimenHtml(){
+  const heightCells = ABRASION_CYCLES.map(c => `<td><input type="number" step="any" class="cycle-height" data-cycle="${c}"></td>`).join('');
+  const weightCells = ABRASION_CYCLES.map(c => `<td><input type="number" step="any" class="cycle-weight" data-cycle="${c}"></td>`).join('');
+  return `
+    <div class="card abrasion-specimen-block" style="margin-bottom:12px;">
+      <div class="toolbar" style="justify-content:space-between;">
+        <strong class="specimen-label"></strong>
+        <button type="button" class="secondary remove-abrasion-btn">✕ Remove specimen</button>
+      </div>
+      <table class="specimen abrasion-cycle-table">
+        <thead><tr><th>Cycle</th><th>0</th><th>4</th><th>8</th><th>12</th><th>16</th></tr></thead>
+        <tbody>
+          <tr><td>Avg Height (mm)</td>${heightCells}</tr>
+          <tr><td>Weight after Cycle (g)</td>${weightCells}</tr>
+        </tbody>
+      </table>
+      <div class="row" style="margin-top:8px;">
+        <div class="field narrow">
+          <label>Measured Thickness of Wearing Layer (mm)</label>
+          <input type="number" step="any" class="measured-thickness">
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renumberAbrasionSpecimens(){
+  const blocks = document.querySelectorAll('#abrasionSpecimensContainer .abrasion-specimen-block');
+  blocks.forEach((b, i) => { b.querySelector('.specimen-label').textContent = `Specimen ${i + 1}`; });
+  document.getElementById('abrasionCountHint').textContent = `${blocks.length} specimen${blocks.length === 1 ? '' : 's'} (min ${MIN_ABRASION_SPECIMENS}, max ${MAX_ABRASION_SPECIMENS})`;
+  document.getElementById('addAbrasionSpecimenBtn').disabled = blocks.length >= MAX_ABRASION_SPECIMENS;
+  document.querySelectorAll('.remove-abrasion-btn').forEach(btn => { btn.disabled = blocks.length <= MIN_ABRASION_SPECIMENS; });
+}
+
+function addAbrasionSpecimen(){
+  const container = document.getElementById('abrasionSpecimensContainer');
+  if (container.querySelectorAll('.abrasion-specimen-block').length >= MAX_ABRASION_SPECIMENS) return;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = buildAbrasionSpecimenHtml();
+  const block = wrapper.firstElementChild;
+  block.querySelector('.remove-abrasion-btn').addEventListener('click', () => removeAbrasionSpecimen(block));
+  container.appendChild(block);
+  renumberAbrasionSpecimens();
+}
+
+function removeAbrasionSpecimen(block){
+  const container = document.getElementById('abrasionSpecimensContainer');
+  if (container.querySelectorAll('.abrasion-specimen-block').length <= MIN_ABRASION_SPECIMENS) return;
+  block.remove();
+  renumberAbrasionSpecimens();
+}
+
+function rebuildAbrasionSpecimens(count){
+  const container = document.getElementById('abrasionSpecimensContainer');
+  container.innerHTML = '';
+  const n = Math.max(MIN_ABRASION_SPECIMENS, Math.min(MAX_ABRASION_SPECIMENS, count || 1));
+  for (let i = 0; i < n; i++) addAbrasionSpecimen();
+}
+
+function getAbrasionSpecimenBlocks(){
+  return Array.from(document.querySelectorAll('#abrasionSpecimensContainer .abrasion-specimen-block'));
+}
+
+function getAbrasionData(){
+  const area = parseFloat(document.getElementById('abrasionSurfaceArea').value);
+  const density = getAbrasionDensity();
+  const blocks = getAbrasionSpecimenBlocks();
+  const perSpecimen = blocks.map(block => {
+    const heights = ABRASION_CYCLES.map(c => parseFloat(block.querySelector(`.cycle-height[data-cycle="${c}"]`).value));
+    const weights = ABRASION_CYCLES.map(c => parseFloat(block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value));
+    const measuredThickness = parseFloat(block.querySelector('.measured-thickness').value);
+    const weightLoss = (!isNaN(weights[0]) && !isNaN(weights[weights.length - 1])) ? weights[0] - weights[weights.length - 1] : NaN;
+    const volumeLoss = (!isNaN(weightLoss) && density > 0) ? weightLoss / density : NaN; // mm3
+    const rawNormalized = (!isNaN(volumeLoss) && area > 0) ? volumeLoss * (5000 / area) : NaN;
+    // IS 15658 Annex D: reported to the nearest whole number of 1000 mm3 per 5000 mm2
+    const normalizedLoss = !isNaN(rawNormalized) ? Math.round(rawNormalized / 1000) * 1000 : NaN;
+    return { heights, weights, measuredThickness, weightLoss, volumeLoss, normalizedLoss };
+  });
+  const validThickness = perSpecimen.map(s => s.measuredThickness).filter(v => !isNaN(v));
+  const meanThickness = validThickness.length ? validThickness.reduce((a, b) => a + b, 0) / validThickness.length : NaN;
+  return perSpecimen.map(s => ({ ...s, meanThickness }));
 }
 
 /* =========================================================================
-   Cube-specific: form validation
+   Choice of tests — show/hide the relevant specimen cards
+   ========================================================================= */
+function getSelectedTests(){
+  return {
+    compressive: document.getElementById('testCompressive').checked,
+    absorption: document.getElementById('testAbsorption').checked,
+    abrasion: document.getElementById('testAbrasion').checked
+  };
+}
+
+function updateTestCardVisibility(){
+  const sel = getSelectedTests();
+  document.getElementById('compressiveCard').style.display = sel.compressive ? 'block' : 'none';
+  document.getElementById('absorptionCard').style.display = sel.absorption ? 'block' : 'none';
+  document.getElementById('abrasionCard').style.display = sel.abrasion ? 'block' : 'none';
+}
+
+/* =========================================================================
+   Init
+   ========================================================================= */
+function onConfigLoaded(){
+  if (!compressiveTable) {
+    compressiveTable = createSpecimenTable({
+      bodyId: 'compressiveBody', addBtnId: 'addCompressiveBtn', countHintId: 'compressiveCountHint',
+      min: MIN_SPECIMENS, max: MAX_SPECIMENS, buildRowCells: buildCompressiveRowCells, onChange: recalcCompressive
+    });
+    absorptionTable = createSpecimenTable({
+      bodyId: 'absorptionBody', addBtnId: 'addAbsorptionBtn', countHintId: 'absorptionCountHint',
+      min: MIN_SPECIMENS, max: MAX_SPECIMENS, buildRowCells: buildAbsorptionRowCells, onChange: recalcAbsorption
+    });
+    document.getElementById('addAbrasionSpecimenBtn').addEventListener('click', () => addAbrasionSpecimen());
+  }
+  compressiveTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  absorptionTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  rebuildAbrasionSpecimens(1); // abrasion defaults to 1 specimen, independently changeable
+  updateAbrasionDensityDisplay();
+  updateTestCardVisibility();
+}
+
+/* =========================================================================
+   Validation
    ========================================================================= */
 function validateForm(){
   const errors = [];
@@ -1176,40 +1469,74 @@ function validateForm(){
   if (!document.getElementById('reportYear').value.trim()) errors.push('Report year is required.');
   if (!document.getElementById('reportDate').value) errors.push('Report date is required.');
   if (!selectedAddress) errors.push('Please select or add an addressee.');
-  if (!document.getElementById('testingDate').value) errors.push('Testing date is required.');
+  // Block Grade is optional — if left blank, the docx shows "Not Specified"
+  // and NOTES estimates a grade from the mean corrected compressive strength instead.
+  if (!document.getElementById('testingDate').value) errors.push('Date of Testing is required.');
+
   const sig1Select = document.getElementById('sigSelect1');
   const sig1Other = document.getElementById('sigOther1');
   const sig1Filled = sig1Select && (sig1Select.value === '__other__' ? (sig1Other && sig1Other.value.trim()) : sig1Select.value.trim());
   if (!sig1Filled) errors.push(`"${CONFIG.RoleLabel1 || 'Role 1'}" signatory is required.`);
 
-  cubeTable.rows().forEach((row, i) => {
-    const area = parseFloat(row.querySelector('.area').value);
-    const dry = parseFloat(row.querySelector('.dryWeight').value);
-    const wet = parseFloat(row.querySelector('.wetWeight').value);
-    const load = parseFloat(row.querySelector('.maxLoad').value);
-    if (isNaN(area) || area <= 0) errors.push(`Specimen ${i + 1}: area is required.`);
-    if (isNaN(dry)) errors.push(`Specimen ${i + 1}: dry weight is required.`);
-    if (isNaN(wet)) errors.push(`Specimen ${i + 1}: wet weight is required.`);
-    if (isNaN(load)) errors.push(`Specimen ${i + 1}: max load is required.`);
-  });
+  const sel = getSelectedTests();
+  if (!sel.compressive && !sel.absorption && !sel.abrasion) {
+    errors.push('Select at least one test (Compressive Strength / Water Absorption / Abrasion Resistance).');
+  }
+
+  if (sel.compressive) {
+    const manualOn = document.getElementById('correctionFactorManualToggle').checked;
+    if (manualOn) {
+      if (isNaN(parseFloat(document.getElementById('correctionFactorManual').value))) {
+        errors.push('Manual Correction Factor is required (override is switched on).');
+      }
+    } else {
+      const thickness = parseFloat(document.getElementById('paverThickness').value);
+      const arris = document.getElementById('paverArris').value;
+      if (isNaN(thickness)) errors.push('Nominal Block Thickness is required.');
+      if (!arris) errors.push('Block Edge (Plain / Arrised-Chamfered) is required.');
+      if (!isNaN(thickness) && arris && isNaN(lookupCorrectionFactor(thickness, arris))) {
+        errors.push('Thickness is outside the IS 15658 Table 5 range (50–120mm) — switch on manual override and enter a factor.');
+      }
+    }
+    compressiveTable.rows().forEach((row, i) => {
+      if (isNaN(parseFloat(row.querySelector('.area').value))) errors.push(`Compressive specimen ${i + 1}: area is required.`);
+      if (isNaN(parseFloat(row.querySelector('.weight').value))) errors.push(`Compressive specimen ${i + 1}: weight is required.`);
+      if (isNaN(parseFloat(row.querySelector('.maxLoad').value))) errors.push(`Compressive specimen ${i + 1}: max load is required.`);
+    });
+  }
+  if (sel.absorption) {
+    absorptionTable.rows().forEach((row, i) => {
+      if (isNaN(parseFloat(row.querySelector('.dryWeight').value))) errors.push(`Absorption specimen ${i + 1}: dry weight is required.`);
+      if (isNaN(parseFloat(row.querySelector('.wetWeight').value))) errors.push(`Absorption specimen ${i + 1}: wet weight is required.`);
+    });
+  }
+  if (sel.abrasion) {
+    if (isNaN(parseFloat(document.getElementById('abrasionSurfaceArea').value))) errors.push('Abrasion: Surface Area is required.');
+    if (isNaN(parseFloat(document.getElementById('abrasionInitialHeight').value))) errors.push('Abrasion: Initial Height is required.');
+    if (isNaN(parseFloat(document.getElementById('abrasionBlockWeight').value))) errors.push('Abrasion: Block Weight is required.');
+    getAbrasionSpecimenBlocks().forEach((block, i) => {
+      ABRASION_CYCLES.forEach(c => {
+        if (isNaN(parseFloat(block.querySelector(`.cycle-height[data-cycle="${c}"]`).value))) errors.push(`Abrasion specimen ${i + 1}: height at cycle ${c} is required.`);
+        if (isNaN(parseFloat(block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value))) errors.push(`Abrasion specimen ${i + 1}: weight at cycle ${c} is required.`);
+      });
+      if (isNaN(parseFloat(block.querySelector('.measured-thickness').value))) errors.push(`Abrasion specimen ${i + 1}: measured thickness is required.`);
+    });
+  }
+
   return errors;
 }
 
 function getAvgStrengthForLog(){
-  const specimens = getSpecimenData();
-  return specimens.length ? specimens[0].mean : '';
+  if (!getSelectedTests().compressive) return '';
+  const data = getCompressiveData();
+  return data.length ? data[0].mean : '';
 }
 
 /* =========================================================================
-   Cube-specific: snapshot collect/apply/reset
+   Snapshot collect/apply/reset
    ========================================================================= */
 function collectPageSnapshot(){
-  const specimens = cubeTable.rows().map(row => ({
-    area: row.querySelector('.area').value,
-    dryWeight: row.querySelector('.dryWeight').value,
-    wetWeight: row.querySelector('.wetWeight').value,
-    maxLoad: row.querySelector('.maxLoad').value
-  }));
+  const sel = getSelectedTests();
   return {
     workDesc: document.getElementById('workDesc').value,
     aeLetterRef: document.getElementById('aeLetterRef').value,
@@ -1218,11 +1545,30 @@ function collectPageSnapshot(){
     agreementDate: document.getElementById('agreementDate').value,
     extraRef1: document.getElementById('extraRef1').value,
     extraRef2: document.getElementById('extraRef2').value,
-    mixSpec: document.getElementById('mixSpec').value,
-    castingDate: document.getElementById('castingDate').value,
+    blockGrade: document.getElementById('blockGrade').value,
+    nominalSize: document.getElementById('nominalSize').value,
+    sourceSupplier: document.getElementById('sourceSupplier').value,
     testingDate: document.getElementById('testingDate').value,
     receiptDate: document.getElementById('receiptDate').value,
-    specimens
+    selectedTests: sel,
+    paverThickness: document.getElementById('paverThickness').value,
+    paverArris: document.getElementById('paverArris').value,
+    correctionFactorManualToggle: document.getElementById('correctionFactorManualToggle').checked,
+    correctionFactorManual: document.getElementById('correctionFactorManual').value,
+    compressive: compressiveTable.rows().map(row => ({
+      area: row.querySelector('.area').value, weight: row.querySelector('.weight').value, maxLoad: row.querySelector('.maxLoad').value
+    })),
+    absorption: absorptionTable.rows().map(row => ({
+      dryWeight: row.querySelector('.dryWeight').value, wetWeight: row.querySelector('.wetWeight').value
+    })),
+    abrasionSurfaceArea: document.getElementById('abrasionSurfaceArea').value,
+    abrasionInitialHeight: document.getElementById('abrasionInitialHeight').value,
+    abrasionBlockWeight: document.getElementById('abrasionBlockWeight').value,
+    abrasion: getAbrasionSpecimenBlocks().map(block => ({
+      heights: ABRASION_CYCLES.map(c => block.querySelector(`.cycle-height[data-cycle="${c}"]`).value),
+      weights: ABRASION_CYCLES.map(c => block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value),
+      measuredThickness: block.querySelector('.measured-thickness').value
+    }))
   };
 }
 
@@ -1235,31 +1581,91 @@ function applyPageSnapshot(snapshot){
   setVal('agreementDate', snapshot.agreementDate);
   setVal('extraRef1', snapshot.extraRef1);
   setVal('extraRef2', snapshot.extraRef2);
-  setVal('mixSpec', snapshot.mixSpec);
-  setVal('castingDate', snapshot.castingDate);
+  setVal('blockGrade', snapshot.blockGrade);
+  setVal('nominalSize', snapshot.nominalSize);
+  setVal('sourceSupplier', snapshot.sourceSupplier);
   setVal('testingDate', snapshot.testingDate);
   setVal('receiptDate', snapshot.receiptDate);
+  setVal('paverThickness', snapshot.paverThickness);
+  setVal('paverArris', snapshot.paverArris);
+  setVal('correctionFactorManual', snapshot.correctionFactorManual);
+  document.getElementById('correctionFactorManualToggle').checked = !!snapshot.correctionFactorManualToggle;
+  document.getElementById('correctionFactorManualRow').style.display = snapshot.correctionFactorManualToggle ? 'flex' : 'none';
+  updateCorrectionFactorDisplay();
+  setVal('abrasionSurfaceArea', snapshot.abrasionSurfaceArea);
+  setVal('abrasionInitialHeight', snapshot.abrasionInitialHeight);
+  setVal('abrasionBlockWeight', snapshot.abrasionBlockWeight);
+  updateAbrasionDensityDisplay();
 
-  if (Array.isArray(snapshot.specimens) && snapshot.specimens.length) {
-    cubeTable.setCount(snapshot.specimens.length);
-    const rows = cubeTable.rows();
-    snapshot.specimens.forEach((s, i) => {
+  if (snapshot.selectedTests) {
+    document.getElementById('testCompressive').checked = !!snapshot.selectedTests.compressive;
+    document.getElementById('testAbsorption').checked = !!snapshot.selectedTests.absorption;
+    document.getElementById('testAbrasion').checked = !!snapshot.selectedTests.abrasion;
+    updateTestCardVisibility();
+  }
+
+  if (Array.isArray(snapshot.compressive) && snapshot.compressive.length) {
+    compressiveTable.setCount(snapshot.compressive.length);
+    const rows = compressiveTable.rows();
+    snapshot.compressive.forEach((s, i) => {
       if (!rows[i]) return;
       if (s.area !== undefined) rows[i].querySelector('.area').value = s.area;
-      if (s.dryWeight !== undefined) rows[i].querySelector('.dryWeight').value = s.dryWeight;
-      if (s.wetWeight !== undefined) rows[i].querySelector('.wetWeight').value = s.wetWeight;
+      if (s.weight !== undefined) rows[i].querySelector('.weight').value = s.weight;
       if (s.maxLoad !== undefined) rows[i].querySelector('.maxLoad').value = s.maxLoad;
     });
-    recalcSpecimens();
+    recalcCompressive();
+  }
+  if (Array.isArray(snapshot.absorption) && snapshot.absorption.length) {
+    absorptionTable.setCount(snapshot.absorption.length);
+    const rows = absorptionTable.rows();
+    snapshot.absorption.forEach((s, i) => {
+      if (!rows[i]) return;
+      if (s.dryWeight !== undefined) rows[i].querySelector('.dryWeight').value = s.dryWeight;
+      if (s.wetWeight !== undefined) rows[i].querySelector('.wetWeight').value = s.wetWeight;
+    });
+    recalcAbsorption();
+  }
+  if (Array.isArray(snapshot.abrasion) && snapshot.abrasion.length) {
+    rebuildAbrasionSpecimens(snapshot.abrasion.length);
+    const blocks = getAbrasionSpecimenBlocks();
+    snapshot.abrasion.forEach((s, i) => {
+      const block = blocks[i];
+      if (!block) return;
+      if (Array.isArray(s.heights)) {
+        ABRASION_CYCLES.forEach((c, ci) => {
+          if (s.heights[ci] !== undefined) block.querySelector(`.cycle-height[data-cycle="${c}"]`).value = s.heights[ci];
+        });
+      }
+      if (Array.isArray(s.weights)) {
+        ABRASION_CYCLES.forEach((c, ci) => {
+          if (s.weights[ci] !== undefined) block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value = s.weights[ci];
+        });
+      }
+      if (s.measuredThickness !== undefined) block.querySelector('.measured-thickness').value = s.measuredThickness;
+    });
   }
 }
 
 function resetPageSpecificFields(){
   ['workDesc', 'aeLetterRef', 'aeLetterDate', 'agreementNumber', 'agreementDate',
-   'extraRef1', 'extraRef2', 'mixSpec', 'castingDate', 'testingDate', 'receiptDate'
+   'extraRef1', 'extraRef2', 'blockGrade', 'sourceSupplier', 'testingDate', 'receiptDate',
+   'paverThickness', 'correctionFactorManual', 'abrasionSurfaceArea', 'abrasionInitialHeight', 'abrasionBlockWeight'
   ].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('paverArris').value = '';
+  document.getElementById('correctionFactorManualToggle').checked = false;
+  document.getElementById('correctionFactorManualRow').style.display = 'none';
+  updateCorrectionFactorDisplay();
+  document.getElementById('nominalSize').value = '200 x 100 x 80 mm';
+  updateAbrasionDensityDisplay();
 
-  cubeTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  document.getElementById('testCompressive').checked = true;
+  document.getElementById('testAbsorption').checked = true;
+  document.getElementById('testAbrasion').checked = true;
+  updateTestCardVisibility();
+
+  compressiveTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  absorptionTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  rebuildAbrasionSpecimens(1);
 
   document.getElementById('llmJsonInput').value = '';
   document.getElementById('jsonApplyStatus').textContent = '';
@@ -1271,9 +1677,9 @@ function resetPageSpecificFields(){
    LLM-assisted auto-fill of the Engineer Letter fields
    ========================================================================= */
 function getExtractionPrompt(){
-  return `You are extracting structured data from a letter (scan/photo/PDF) sent by an Assistant Engineer, for a concrete cube compressive strength test lab report.
+  return `You are extracting structured data from a letter (scan/photo/PDF) sent by an Assistant Engineer, for a precast concrete paving block test lab report.
 
-Read the attached letter (OCR it if it is scanned or an image) and return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences, no explanation:
+Read the attached letter (OCR it if scanned or an image) and return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences:
 
 {
   "workDescription": string or null,
@@ -1281,8 +1687,8 @@ Read the attached letter (OCR it if it is scanned or an image) and return ONLY a
   "aeLetterDate": string or null,
   "agreementNumber": string or null,
   "agreementDate": string or null,
-  "mixSpec": string or null,
-  "castingDate": string or null,
+  "blockGrade": string or null,
+  "sourceSupplier": string or null,
   "testingDate": string or null,
   "receiptDate": string or null,
   "extraRef1": string or null,
@@ -1291,13 +1697,14 @@ Read the attached letter (OCR it if it is scanned or an image) and return ONLY a
 }
 
 Field notes:
-- workDescription: the SO number and/or work description mentioned (e.g. "SO 155/25-26 PDY Thottappalli Kalarikkal road concreting ward 18").
+- workDescription: the SO number and/or work description mentioned.
 - aeLetterRef / aeLetterDate: the Assistant Engineer's own letter reference number and its date.
 - agreementNumber / agreementDate: the agreement referenced, if any.
-- mixSpec: the concrete mix spec, e.g. "M20".
-- castingDate / testingDate / receiptDate: relevant dates if stated (receiptDate = when the specimen was received at the lab).
+- blockGrade: the declared paving block grade, e.g. "M35".
+- sourceSupplier: the block source/supplier/precast yard, if named.
+- testingDate / receiptDate: relevant dates if stated.
 - extraRef1 / extraRef2: any other distinct reference mentioned that does not fit the fields above.
-- addressee: the sender's name, designation, and office as a multi-line address block, with lines separated by \\n (this is a draft only — it will be reviewed before being saved).
+- addressee: the sender's name, designation, and office as a multi-line address block, lines separated by \\n (a draft only — reviewed before saving).
 
 Rules:
 - Use null for anything not stated in the letter — never guess or invent a value.
@@ -1317,32 +1724,19 @@ function onApplyJson(){
   const statusEl = document.getElementById('jsonApplyStatus');
   statusEl.classList.remove('error');
   const raw = document.getElementById('llmJsonInput').value.trim();
-  if (!raw) {
-    statusEl.textContent = 'Paste the JSON returned by the LLM first.';
-    statusEl.classList.add('error');
-    return;
-  }
+  if (!raw) { statusEl.textContent = 'Paste the JSON returned by the LLM first.'; statusEl.classList.add('error'); return; }
   let data;
-  try {
-    data = JSON.parse(raw);
-  } catch (err) {
-    statusEl.textContent = `Invalid JSON: ${err.message}`;
-    statusEl.classList.add('error');
-    return;
-  }
+  try { data = JSON.parse(raw); }
+  catch (err) { statusEl.textContent = `Invalid JSON: ${err.message}`; statusEl.classList.add('error'); return; }
 
   const textFieldMap = {
     workDescription: 'workDesc', aeLetterRef: 'aeLetterRef', agreementNumber: 'agreementNumber',
-    mixSpec: 'mixSpec', extraRef1: 'extraRef1', extraRef2: 'extraRef2'
+    blockGrade: 'blockGrade', sourceSupplier: 'sourceSupplier', extraRef1: 'extraRef1', extraRef2: 'extraRef2'
   };
-  const dateFieldMap = {
-    aeLetterDate: 'aeLetterDate', agreementDate: 'agreementDate',
-    castingDate: 'castingDate', testingDate: 'testingDate', receiptDate: 'receiptDate'
-  };
+  const dateFieldMap = { aeLetterDate: 'aeLetterDate', agreementDate: 'agreementDate', testingDate: 'testingDate', receiptDate: 'receiptDate' };
 
   const filled = [];
   const skippedDates = [];
-
   Object.entries(textFieldMap).forEach(([jsonKey, elId]) => {
     const val = data[jsonKey];
     if (val !== null && val !== undefined && val.toString().trim()) {
@@ -1350,20 +1744,14 @@ function onApplyJson(){
       filled.push(elId);
     }
   });
-
   Object.entries(dateFieldMap).forEach(([jsonKey, elId]) => {
     const val = data[jsonKey];
     if (val !== null && val !== undefined && val.toString().trim()) {
       const iso = normalizeDateStr(val);
-      if (iso) {
-        document.getElementById(elId).value = iso;
-        filled.push(elId);
-      } else {
-        skippedDates.push(`${jsonKey}="${val}"`);
-      }
+      if (iso) { document.getElementById(elId).value = iso; filled.push(elId); }
+      else skippedDates.push(`${jsonKey}="${val}"`);
     }
   });
-
   if (data.addressee && data.addressee.toString().trim()) {
     document.getElementById('addAddressForm').style.display = 'block';
     document.getElementById('newAddressText').value = data.addressee.toString().trim();
@@ -1377,27 +1765,29 @@ function onApplyJson(){
 }
 
 /* =========================================================================
-   LLM-assisted auto-fill of the specimen table from a log book photo
+   LLM-assisted auto-fill of the specimen tables from a log book photo
    ========================================================================= */
 function getSpecimenExtractionPrompt(){
-  return `You are extracting concrete cube test specimen data from a photo of a handwritten lab log book page (the photo may be rotated — mentally rotate it the right way up before reading).
+  return `You are extracting precast concrete paving block compressive-strength specimen data from a photo of a handwritten lab log book page (the photo may be rotated — mentally rotate it the right way up before reading).
 
-For each specimen row in the log book, read ONLY these three values:
-- Dry Weight (kg)
-- Wet Weight (kg)
-- Maximum Load (the load column, whatever unit it's recorded in — copy the number exactly as written)
+Read ONLY the Compressive Strength table, if present. Do NOT read Water Absorption or Abrasion Resistance data — those aren't auto-filled this way.
 
-Do NOT read or return any Compressive Strength / result column, even if one is present in the log book — it gets recalculated separately and should be ignored entirely.
-
-Return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences, no explanation:
+Return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences:
 
 {
-  "specimens": [
-    { "dryWeight": number or null, "wetWeight": number or null, "maxLoad": number or null }
-  ]
+  "compressive": [ { "area": number or null, "weight": number or null, "load": number or null } ]
 }
 
-One entry per specimen row, in the same top-to-bottom order they appear in the log book page. Use null for any value you can't read confidently — never guess or invent a number. Output must be valid JSON and nothing else.`;
+Field notes:
+- area: plan area of the specimen in sq.cm (convert if the log book records it in sq.mm — divide by 100).
+- weight: specimen weight in kg.
+- load: maximum load in kN.
+
+Rules:
+- One array entry per specimen row, top-to-bottom order as in the log book.
+- Do NOT read or return any already-computed Apparent Strength, Corrected Strength, or Average values — those are recalculated here from the raw measurements.
+- Use null for any value you can't read confidently — never guess or invent a number.
+- Output must be valid JSON and nothing else.`;
 }
 
 function onCopySpecimenPrompt(){
@@ -1412,66 +1802,50 @@ function onApplySpecimenJson(){
   const statusEl = document.getElementById('specimenJsonApplyStatus');
   statusEl.classList.remove('error');
   const raw = document.getElementById('specimenJsonInput').value.trim();
-  if (!raw) {
-    statusEl.textContent = 'Paste the JSON returned by the LLM first.';
-    statusEl.classList.add('error');
-    return;
-  }
-
+  if (!raw) { statusEl.textContent = 'Paste the JSON returned by the LLM first.'; statusEl.classList.add('error'); return; }
   let data;
-  try {
-    data = JSON.parse(raw);
-  } catch (err) {
-    statusEl.textContent = `Invalid JSON: ${err.message}`;
-    statusEl.classList.add('error');
-    return;
-  }
-  if (!data || !Array.isArray(data.specimens) || !data.specimens.length) {
-    statusEl.textContent = 'JSON must have a non-empty "specimens" array.';
+  try { data = JSON.parse(raw); }
+  catch (err) { statusEl.textContent = `Invalid JSON: ${err.message}`; statusEl.classList.add('error'); return; }
+
+  if (!Array.isArray(data.compressive) || !data.compressive.length) {
+    statusEl.textContent = 'JSON must have a non-empty "compressive" array.';
     statusEl.classList.add('error');
     return;
   }
 
-  const warnings = [];
-  let desiredCount = data.specimens.length;
-  if (desiredCount > MAX_SPECIMENS) {
-    warnings.push(`log book had ${desiredCount} rows — only the first ${MAX_SPECIMENS} were applied (form max)`);
-    desiredCount = MAX_SPECIMENS;
-  }
-  const actualCount = cubeTable.setCount(desiredCount);
-  const rows = cubeTable.rows();
-  let filledCount = 0;
-  const missingFields = [];
-  data.specimens.slice(0, actualCount).forEach((s, i) => {
-    const row = rows[i];
-    if (!row) return;
-    let rowFilled = false;
-    ['dryWeight', 'wetWeight', 'maxLoad'].forEach(key => {
-      const val = s[key];
-      if (val !== null && val !== undefined && val !== '') {
-        row.querySelector(`.${key}`).value = val;
-        rowFilled = true;
-      } else {
-        missingFields.push(`specimen ${i + 1} ${key}`);
-      }
-    });
-    if (rowFilled) filledCount++;
+  const count = compressiveTable.setCount(Math.min(data.compressive.length, MAX_SPECIMENS));
+  const rows = compressiveTable.rows();
+  data.compressive.slice(0, count).forEach((s, i) => {
+    if (!rows[i]) return;
+    if (s.area !== null && s.area !== undefined) rows[i].querySelector('.area').value = s.area;
+    if (s.weight !== null && s.weight !== undefined) rows[i].querySelector('.weight').value = s.weight;
+    if (s.load !== null && s.load !== undefined) rows[i].querySelector('.maxLoad').value = s.load;
   });
-  recalcSpecimens();
+  recalcCompressive();
 
-  let msg = `Filled ${filledCount} of ${actualCount} specimen row(s). Area was left unchanged — it's not read from the photo.`;
-  if (warnings.length) msg += ` ${warnings.join('; ')}.`;
-  if (missingFields.length) msg += ` Missing/unclear: ${missingFields.join(', ')}.`;
-  statusEl.textContent = msg;
+  statusEl.textContent = `Filled — Compressive: ${count} row(s). Remember to set the Correction Factor if you haven't already.`;
 }
 
 /* =========================================================================
-   Cube-specific wiring + init
+   Wiring + init
    ========================================================================= */
 function wireEvents(){
   wireCommonEvents();
-  document.getElementById('specimenBody').addEventListener('input', (e) => {
-    if (e.target.tagName === 'INPUT') recalcSpecimens();
+  document.getElementById('compressiveBody').addEventListener('input', (e) => { if (e.target.tagName === 'INPUT') recalcCompressive(); });
+  ['paverThickness', 'paverArris'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => { updateCorrectionFactorDisplay(); recalcCompressive(); });
+  });
+  document.getElementById('correctionFactorManualToggle').addEventListener('change', (e) => {
+    document.getElementById('correctionFactorManualRow').style.display = e.target.checked ? 'flex' : 'none';
+    recalcCompressive();
+  });
+  document.getElementById('correctionFactorManual').addEventListener('input', recalcCompressive);
+  document.getElementById('absorptionBody').addEventListener('input', (e) => { if (e.target.tagName === 'INPUT') recalcAbsorption(); });
+  ['abrasionSurfaceArea', 'abrasionInitialHeight', 'abrasionBlockWeight'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateAbrasionDensityDisplay);
+  });
+  ['testCompressive', 'testAbsorption', 'testAbrasion'].forEach(id => {
+    document.getElementById(id).addEventListener('change', updateTestCardVisibility);
   });
   document.getElementById('copyPromptBtn').addEventListener('click', onCopyPrompt);
   document.getElementById('applyJsonBtn').addEventListener('click', onApplyJson);
@@ -1481,15 +1855,31 @@ function wireEvents(){
 
 window.addEventListener('DOMContentLoaded', () => {
   populateMonthYear();
-  onConfigLoaded(); // builds the specimen table with fallback defaults immediately
+  onConfigLoaded();
   renderSignatoryFields();
   wireEvents();
-  loadConfig(); // refreshes CONFIG/NAMES, then calls onConfigLoaded() again with real defaults
+  loadConfig();
 });
 
 /* =========================================================================
    Document generation
    ========================================================================= */
+function joinWithAnd(items){
+  if (items.length <= 1) return items.join('');
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+// Standard IS 15658 declared grade values for precast concrete paving blocks (N/mm²).
+// Used only when the user leaves Block Grade blank — picks the highest
+// grade the mean corrected compressive strength would qualify for.
+function guessBlockGrade(meanStrength){
+  const grades = [25, 30, 35, 40, 50, 55];
+  let guessed = null;
+  for (const g of grades) { if (meanStrength >= g) guessed = g; }
+  return guessed;
+}
+
 async function buildDocx(){
   const {
     Document, Paragraph, TextRun, Table, TableRow, TableCell,
@@ -1506,40 +1896,31 @@ async function buildDocx(){
   function run(text, opts = {}){
     return new TextRun({ text: text == null ? '' : String(text), bold: !!opts.bold, italics: !!opts.italics, size: opts.size || FONT_SIZE });
   }
-
   function cell(text, opts = {}){
     return new TableCell({
       width: opts.width ? { size: opts.width, type: WidthType.PERCENTAGE } : undefined,
       verticalAlign: VerticalAlign.CENTER,
       rowSpan: opts.rowSpan || undefined,
-      children: [ new Paragraph({
-        alignment: opts.align || AlignmentType.LEFT,
-        children: [ run(text, opts) ]
-      }) ]
+      children: [ new Paragraph({ alignment: opts.align || AlignmentType.LEFT, children: [ run(text, opts) ] }) ]
     });
   }
 
-  const REF_NUMBERING = 'cube-report-refs';
-  const NOTES_NUMBERING = 'cube-report-notes';
-
+  const REF_NUMBERING = 'paving-report-refs';
+  const NOTES_NUMBERING = 'paving-report-notes';
+  const sel = getSelectedTests();
   const children = [];
 
-  // 1. Report No (left) and Date (right) on the same line — values only, no labels
+  // 1. Report No (left) and Date (right) on the same line
   const reportNo = composedReportNumber();
   const reportDateFmt = fmtDate(document.getElementById('reportDate').value);
-  const reportLineTable = new Table({
+  children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: noBorders,
     rows: [ new TableRow({ children: [
-      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [
-        new Paragraph({ alignment: AlignmentType.LEFT, children: [ run(reportNo, { bold: true }) ] })
-      ]}),
-      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [
-        new Paragraph({ alignment: AlignmentType.RIGHT, children: [ run(reportDateFmt) ] })
-      ]})
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [ new Paragraph({ alignment: AlignmentType.LEFT, children: [ run(reportNo, { bold: true }) ] }) ]}),
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [ new Paragraph({ alignment: AlignmentType.RIGHT, children: [ run(reportDateFmt) ] }) ]})
     ]})]
-  });
-  children.push(reportLineTable);
+  }));
   children.push(new Paragraph({ text: '', spacing: { after: 100 } }));
 
   // 2. Addressee
@@ -1549,13 +1930,20 @@ async function buildDocx(){
     children.push(new Paragraph({ children: [ run(line) ], spacing: { after: i === addrLines.length - 1 ? 200 : 0 } }));
   });
 
-  // 3. Subject
+  // 3. Subject — reflects only the tests actually selected
+  const testDisplayNames = [];
+  if (sel.compressive) testDisplayNames.push('Compressive Strength');
+  if (sel.absorption) testDisplayNames.push('Water Absorption');
+  if (sel.abrasion) testDisplayNames.push('Abrasion Resistance');
   children.push(new Paragraph({
     spacing: { after: 200 },
-    children: [ run('Sub: Compressive Strength of Concrete Cubes - Results', { bold: true }) ]
+    children: [ run(`Sub: ${joinWithAnd(testDisplayNames)} of Precast Concrete Paving Blocks - Results`, { bold: true }) ]
   }));
 
-  // 4. References — native Word numbered list, not typed "1." prefixes
+  // 4. References — same fallback conventions as cube/brick, plus ONE
+  // MERGED IS 15658 reference (base spec line, always present whenever any
+  // test is selected, with Annex C/D named in parentheses only for
+  // Compressive/Abrasion — Water Absorption isn't tied to a specific annex).
   const workDesc = document.getElementById('workDesc').value.trim();
   const ref1 = workDesc ? workDesc : null; // omitted entirely from the list if blank, not "Not Specified"
 
@@ -1571,14 +1959,20 @@ async function buildDocx(){
     ? (agreementDate ? `Agreement No ${agreementNumber} dated ${agreementDate}` : `Agreement No ${agreementNumber}`)
     : 'Letter of request submitted to the department for testing';
 
+  const annexParts = [];
+  if (sel.compressive) annexParts.push('Annex C - Compressive Strength');
+  if (sel.abrasion) annexParts.push('Annex D - Abrasion Resistance (Wide-Wheel Method)');
+  const anyTestSelected = sel.compressive || sel.absorption || sel.abrasion;
+  const standardRefs = anyTestSelected
+    ? [`IS 15658:2006 - Precast Concrete Blocks for Paving - Specification${annexParts.length ? ` (${annexParts.join('; ')})` : ''}`]
+    : [];
+
   const extraRef1 = document.getElementById('extraRef1').value.trim();
   const extraRef2 = document.getElementById('extraRef2').value.trim();
   const optionalExtras = [extraRef1, extraRef2].filter(Boolean);
 
-  const fixedIS516Ref = 'IS 516 (Part 1/Sec 1)- Hardened concrete methods of test part 1 testing of strength of hardened concrete section 1';
-
   const mainRefs = [ref1, ref2, ref3].filter(Boolean); // ref2/ref3 always have a fallback string, ref1 is dropped entirely if blank
-  const allRefs = [...mainRefs, ...optionalExtras, fixedIS516Ref];
+  const allRefs = [...mainRefs, ...standardRefs, ...optionalExtras];
   children.push(new Paragraph({ children: [ run('Ref:') ], spacing: { after: 40 } }));
   allRefs.forEach((ref, i) => {
     children.push(new Paragraph({
@@ -1588,36 +1982,44 @@ async function buildDocx(){
     }));
   });
 
-  // 5. Mix / Size / Casting / Testing table
-  const mixSpecRaw = document.getElementById('mixSpec').value.trim();
-  const castingDateRaw = fmtDate(document.getElementById('castingDate').value);
-  const mixSpec = mixSpecRaw ? `${mixSpecRaw}*` : 'Not Specified';
-  const castingDate = castingDateRaw ? `${castingDateRaw}*` : 'Not Specified';
-  const testingDate = fmtDate(document.getElementById('testingDate').value); // required
-  const hasStarredValue = Boolean(mixSpecRaw || castingDateRaw);
+  // Ref number for the section labels — all three tests point at the SAME
+  // merged IS 15658 reference, since the base spec line covers all of them.
+  const mergedRefNumber = standardRefs.length ? mainRefs.length + 1 : null;
+  const refNumbers = { compressive: mergedRefNumber, absorption: mergedRefNumber, abrasion: mergedRefNumber };
 
-  const infoTable = new Table({
+  // Section letters, in the same fixed priority order (Compressive, Absorption, Abrasion)
+  const letters = ['A', 'B', 'C'];
+  let letterCursor = 0;
+  const sectionLetters = {};
+  if (sel.compressive) sectionLetters.compressive = letters[letterCursor++];
+  if (sel.absorption) sectionLetters.absorption = letters[letterCursor++];
+  if (sel.abrasion) sectionLetters.abrasion = letters[letterCursor++];
+
+  // 5. Block Grade / Nominal Size / Source-Supplier / Testing Date table
+  const blockGradeRaw = document.getElementById('blockGrade').value.trim();
+  const sourceSupplierRaw = document.getElementById('sourceSupplier').value.trim();
+  const blockGrade = blockGradeRaw ? `${blockGradeRaw}*` : 'Not Specified';
+  const sourceSupplier = sourceSupplierRaw ? `${sourceSupplierRaw}*` : 'Not Specified';
+  const hasStarredValue = Boolean(blockGradeRaw || sourceSupplierRaw);
+  const nominalSize = orNotSpecified(document.getElementById('nominalSize').value);
+  const testingDate = fmtDate(document.getElementById('testingDate').value); // required
+
+  children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: gridBorders,
     rows: [
       new TableRow({ children: [
-        cell('Mix Spec', { bold: true, width: 20 }),
-        cell(mixSpec, { width: 30 }),
-        cell('Size', { bold: true, width: 20 }),
-        cell('15cm x15cm x15cm', { width: 30 })
+        cell('Block Grade', { bold: true, width: 20 }), cell(blockGrade, { width: 30 }),
+        cell('Nominal Size', { bold: true, width: 20 }), cell(nominalSize, { width: 30 })
       ]}),
       new TableRow({ children: [
-        cell('Casting Date', { bold: true, width: 20 }),
-        cell(castingDate, { width: 30 }),
-        cell('Testing Date', { bold: true, width: 20 }),
-        cell(testingDate, { width: 30 })
+        cell('Source / Supplier', { bold: true, width: 20 }), cell(sourceSupplier, { width: 30 }),
+        cell('Date of Testing', { bold: true, width: 20 }), cell(testingDate, { width: 30 })
       ]})
     ]
-  });
-  children.push(infoTable);
+  }));
 
-  // 6. Date of Receipt of Specimen — sits close to the table above, font
-  // reduced by 1pt, spacing kept before the results table below.
+  // 6. Date of Receipt of Specimen — same tight-spacing/reduced-font convention as the cube report
   const RECEIPT_LINE_FONT_SIZE = FONT_SIZE - 2;
   const receiptDate = orNotSpecified(fmtDate(document.getElementById('receiptDate').value));
   children.push(new Paragraph({
@@ -1628,34 +2030,126 @@ async function buildDocx(){
     ]
   }));
 
-  // 7. Results table — Mean Strength column merged into one cell spanning all specimen rows
-  const specimens = getSpecimenData();
-  const headerLabels = ['Sl No','Area of sample\n(sq.cm)','Dry Weight\n(kg)','Wet Weight\n(kg)','Maximum Load\n(kN)','Compressive\nStrength (MPa)','Mean Strength\n(MPa)','Variation from\nMean (%)'];
-  const headerRow = new TableRow({
-    tableHeader: true,
-    children: headerLabels.map(h => cell(h, { bold: true, align: AlignmentType.CENTER }))
-  });
-  const dataRows = specimens.map((s, i) => {
-    const rowCells = [
-      cell(i + 1, { align: AlignmentType.CENTER }),
-      cell(s.area, { align: AlignmentType.CENTER }),
-      cell(Number(s.dryWeight).toFixed(3), { align: AlignmentType.CENTER }),
-      cell(Number(s.wetWeight).toFixed(3), { align: AlignmentType.CENTER }),
-      cell(s.load, { align: AlignmentType.CENTER }),
-      cell(s.strength.toFixed(2), { align: AlignmentType.CENTER })
-    ];
-    if (i === 0) {
-      rowCells.push(cell(s.mean.toFixed(2), { align: AlignmentType.CENTER, rowSpan: specimens.length }));
+  // 7A. Compressive Strength
+  let compressiveMeanForNotes = null; // captured here for the NOTES section below
+  if (sel.compressive) {
+    const data = getCompressiveData();
+    compressiveMeanForNotes = data.length ? data[0].mean : null;
+    const factor = getEffectiveCorrectionFactor();
+    const manualOn = document.getElementById('correctionFactorManualToggle').checked;
+    const paverThickness = document.getElementById('paverThickness').value;
+    const paverArris = document.getElementById('paverArris').value === 'chamfered' ? 'Arrised/Chamfered' : 'Plain';
+    const factorNote = manualOn
+      ? `* Correction factor of ${isNaN(factor) ? 'Not Specified' : factor} applied to every specimen's apparent strength (manually entered — not looked up from IS 15658:2006 Table 5).`
+      : `* Correction factor of ${isNaN(factor) ? 'Not Specified' : factor.toFixed(3)} applied to every specimen's apparent strength, per IS 15658:2006 Table 5 (${paverThickness}mm nominal thickness, ${paverArris}); verify against current edition before use.`;
+    children.push(new Paragraph({
+      spacing: { before: 100, after: 100 },
+      children: [ run(`${sectionLetters.compressive}. Compressive Strength (Ref ${refNumbers.compressive})`, { bold: true }) ]
+    }));
+    const headerRow = new TableRow({ tableHeader: true, children: ['Sl No','Area\n(sq.cm)','Weight\n(kg)','Load\n(kN)','Apparent\nStrength (N/mm²)','Corrected\nStrength (N/mm²)','Average\n(N/mm²)'].map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+    const dataRows = data.map((s, i) => {
+      const rowCells = [
+        cell(i + 1, { align: AlignmentType.CENTER }),
+        cell(s.area, { align: AlignmentType.CENTER }),
+        cell(Number(s.weight).toFixed(3), { align: AlignmentType.CENTER }),
+        cell(s.load, { align: AlignmentType.CENTER }),
+        cell(s.apparent.toFixed(2), { align: AlignmentType.CENTER }),
+        cell(s.corrected.toFixed(2), { align: AlignmentType.CENTER })
+      ];
+      if (i === 0) rowCells.push(cell(s.mean.toFixed(2), { align: AlignmentType.CENTER, rowSpan: data.length }));
+      return new TableRow({ children: rowCells });
+    });
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows: [headerRow, ...dataRows] }));
+    children.push(new Paragraph({
+      spacing: { before: 60, after: 100 },
+      children: [ run(factorNote, { italics: true, size: 18 }) ]
+    }));
+  }
+
+  // 7B. Water Absorption
+  if (sel.absorption) {
+    const data = getAbsorptionData();
+    children.push(new Paragraph({
+      spacing: { before: 200, after: 100 },
+      children: [ run(`${sectionLetters.absorption}. Water Absorption (Ref ${refNumbers.absorption})`, { bold: true }) ]
+    }));
+    const headerRow = new TableRow({ tableHeader: true, children: ['Sl No','Dry Weight\n(kg)','Wet Weight\n(kg)','Water Absorption\n(%)','Mean Absorption\n(%)'].map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+    const dataRows = data.map((s, i) => {
+      const rowCells = [
+        cell(i + 1, { align: AlignmentType.CENTER }),
+        cell(Number(s.dryWeight).toFixed(3), { align: AlignmentType.CENTER }),
+        cell(Number(s.wetWeight).toFixed(3), { align: AlignmentType.CENTER }),
+        cell(s.absorption.toFixed(2), { align: AlignmentType.CENTER })
+      ];
+      if (i === 0) rowCells.push(cell(s.mean.toFixed(2), { align: AlignmentType.CENTER, rowSpan: data.length }));
+      return new TableRow({ children: rowCells });
+    });
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows: [headerRow, ...dataRows] }));
+  }
+
+  // 7C. Abrasion Resistance
+  if (sel.abrasion) {
+    const data = getAbrasionData();
+    const area = parseFloat(document.getElementById('abrasionSurfaceArea').value);
+    const density = getAbrasionDensity();
+    children.push(new Paragraph({
+      spacing: { before: 200, after: 60 },
+      children: [ run(`${sectionLetters.abrasion}. Abrasion Resistance (Wide-Wheel Method) (Ref ${refNumbers.abrasion})`, { bold: true }) ]
+    }));
+    children.push(new Paragraph({
+      spacing: { after: 100 },
+      children: [ run(`Surface Area of Specimen: ${area} sq.mm. Initial Height: ${document.getElementById('abrasionInitialHeight').value} mm. Density (ρ): ${isNaN(density) ? 'Not Specified' : density.toFixed(6)} g/mm³ (computed from block weight, height, and area).`, { italics: true, size: 18 }) ]
+    }));
+
+    // Per-specimen cycle tables
+    data.forEach((s, i) => {
+      children.push(new Paragraph({
+        spacing: { before: 80, after: 60 },
+        children: [ run(`Specimen ${i + 1}`, { bold: true }) ]
+      }));
+      const cycleHeaderRow = new TableRow({ tableHeader: true, children: ['Cycle', ...ABRASION_CYCLES.map(String)].map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+      const heightRow = new TableRow({ children: [cell('Avg Height (mm)', { bold: true }), ...s.heights.map(h => cell(isNaN(h) ? '—' : h, { align: AlignmentType.CENTER }))] });
+      const weightRow = new TableRow({ children: [cell('Weight after Cycle (g)', { bold: true }), ...s.weights.map(w => cell(isNaN(w) ? '—' : w, { align: AlignmentType.CENTER }))] });
+      children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows: [cycleHeaderRow, heightRow, weightRow] }));
+    });
+
+    // Summary table
+    children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [ run('Summary', { bold: true }) ] }));
+    const summaryHeaderRow = new TableRow({ tableHeader: true, children: ['Sl No','Weight Loss\nΔm (g)','Volume Loss\nΔV (mm³)','Normalized Loss\n(mm³ per 5000 mm²)','Measured Thickness\n(mm)','Mean Thickness\n(mm)'].map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+    const summaryRows = data.map((s, i) => {
+      const rowCells = [
+        cell(i + 1, { align: AlignmentType.CENTER }),
+        cell(isNaN(s.weightLoss) ? '—' : s.weightLoss.toFixed(2), { align: AlignmentType.CENTER }),
+        cell(isNaN(s.volumeLoss) ? '—' : s.volumeLoss.toFixed(2), { align: AlignmentType.CENTER }),
+        cell(isNaN(s.normalizedLoss) ? '—' : s.normalizedLoss, { align: AlignmentType.CENTER }),
+        cell(isNaN(s.measuredThickness) ? '—' : s.measuredThickness, { align: AlignmentType.CENTER })
+      ];
+      if (i === 0) rowCells.push(cell(isNaN(s.meanThickness) ? '—' : s.meanThickness.toFixed(2), { align: AlignmentType.CENTER, rowSpan: data.length }));
+      return new TableRow({ children: rowCells });
+    });
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows: [summaryHeaderRow, ...summaryRows] }));
+    children.push(new Paragraph({
+      spacing: { before: 60, after: 100 },
+      children: [ run('* Directly measured with a depth gauge on the worn specimen; not derived from the mass/volume-loss series above.', { italics: true, size: 18 }) ]
+    }));
+
+    // Auto Class A/B compliance line
+    const meanThickness = data.length ? data[0].meanThickness : NaN;
+    let classLine;
+    if (isNaN(meanThickness)) {
+      classLine = 'Not Specified';
+    } else if (meanThickness <= 3.0) {
+      classLine = `${meanThickness.toFixed(2)} mm — meets both Class A (≤3.0 mm) and Class B (≤4.0 mm) limits.`;
+    } else if (meanThickness <= 4.0) {
+      classLine = `${meanThickness.toFixed(2)} mm — exceeds Class A (3.0 mm) but meets Class B (≤4.0 mm) limit.`;
+    } else {
+      classLine = `${meanThickness.toFixed(2)} mm — exceeds both Class A (3.0 mm) and Class B (4.0 mm) limits.`;
     }
-    rowCells.push(cell((s.variation > 0 ? '+' : '') + s.variation.toFixed(2) + '%', { align: AlignmentType.CENTER }));
-    return new TableRow({ children: rowCells });
-  });
-  const resultsTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: gridBorders,
-    rows: [headerRow, ...dataRows]
-  });
-  children.push(resultsTable);
+    children.push(new Paragraph({
+      spacing: { before: 100, after: 200 },
+      children: [ run('Mean Measured Thickness of Wearing Layer: ', { bold: true }), run(classLine) ]
+    }));
+  }
 
   if (hasStarredValue) {
     children.push(new Paragraph({
@@ -1664,19 +2158,31 @@ async function buildDocx(){
     }));
   }
 
-  // 9. NOTES — native numbered list, indented one step further right than
-  // References; the "NOTES:" heading itself stays unindented. Smaller font (9pt).
+  // 9. NOTES — native numbered list, same convention as the cube report;
+  // only the notes relevant to the selected tests are included.
   const NOTES_FONT_SIZE = 18; // half-points; 18 = 9pt
-  children.push(new Paragraph({
-    spacing: { after: 80 },
-    children: [ run('NOTES:', { bold: true }) ]
-  }));
-  const notes = [
-    'The result reported pertains only to the specimens submitted in the lab.',
-    '28th day individual test result shall not go below (fck – 3) MPa as per Table 11, IS456:2000',
-    'Variation of test results must not be more than ±15% of mean strength as per Cl 15.4 of IS456:2000',
-    'Mean strength must be at least equal to characteristic strength (fck)'
-  ];
+  children.push(new Paragraph({ spacing: { before: 200, after: 80 }, children: [ run('NOTES:', { bold: true }) ] }));
+  const notes = ['The results reported pertain only to the specimens submitted in the lab.'];
+  if (sel.compressive) {
+    if (blockGradeRaw) {
+      notes.push(`As per IS 15658:2006, the corrected compressive strength of the sample shall not be less than the declared grade value (${blockGradeRaw.replace(/^M/i, '')} N/mm² for ${blockGradeRaw}), and no individual specimen shall fall below 85% of the grade value.`);
+    } else if (compressiveMeanForNotes !== null && !isNaN(compressiveMeanForNotes)) {
+      const guessedGrade = guessBlockGrade(compressiveMeanForNotes);
+      if (guessedGrade !== null) {
+        notes.push(`Declared grade not specified — based on the mean corrected compressive strength obtained (${compressiveMeanForNotes.toFixed(2)} N/mm²), the sample falls under Grade M${guessedGrade} as per IS 15658:2006.`);
+      } else {
+        notes.push(`Declared grade not specified — the mean corrected compressive strength obtained (${compressiveMeanForNotes.toFixed(2)} N/mm²) does not meet the minimum grade requirement (M25) as per IS 15658:2006.`);
+      }
+    } else {
+      notes.push('Declared grade not specified.');
+    }
+  }
+  if (sel.absorption) {
+    notes.push('As per IS 15658:2006, water absorption shall not exceed 6% average and 7% for any individual specimen.');
+  }
+  if (sel.abrasion) {
+    notes.push('As per IS 15658 Annex D, mean measured thickness of the wearing layer after abrasion shall not exceed 3.0 mm for Class A (heavy traffic) or 4.0 mm for Class B (light traffic).');
+  }
   notes.forEach((n, i) => {
     children.push(new Paragraph({
       numbering: { reference: NOTES_NUMBERING, level: 0 },
@@ -1692,46 +2198,26 @@ async function buildDocx(){
     const sigCells = signatories.map(sig => new TableCell({
       width: { size: colWidth, type: WidthType.PERCENTAGE },
       children: [
-        new Paragraph({ text: '' }),
-        new Paragraph({ text: '' }),
+        new Paragraph({ text: '' }), new Paragraph({ text: '' }),
         new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.role, { bold: true }) ] }),
         new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.name) ] })
       ]
     }));
-    children.push(new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: noBorders,
-      rows: [ new TableRow({ children: sigCells }) ]
-    }));
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: noBorders, rows: [ new TableRow({ children: sigCells }) ] }));
   }
 
   const doc = new Document({
     styles: { default: { document: { run: { size: FONT_SIZE } } } },
     numbering: {
       config: [
-        {
-          reference: REF_NUMBERING,
-          levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START,
-            style: { paragraph: { indent: { left: 360, hanging: 360 } } } }]
-        },
-        {
-          reference: NOTES_NUMBERING,
-          levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START,
-            style: { paragraph: { indent: { left: 720, hanging: 360 } } } }]
-        }
+        { reference: REF_NUMBERING, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 360, hanging: 360 } } } }] },
+        { reference: NOTES_NUMBERING, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }
       ]
     },
     sections: [{
-      properties: {
-        page: {
-          margin: {
-            top: Math.round(4.4 * 566.929),    // 4.4 cm
-            bottom: Math.round(3.6 * 566.929), // 3.6 cm
-            left: 1440,                         // standard 1 in
-            right: 1440                         // standard 1 in
-          }
-        }
-      },
+      properties: { page: { margin: {
+        top: Math.round(4.4 * 566.929), bottom: Math.round(3.6 * 566.929), left: 1440, right: 1440
+      } } },
       children
     }]
   });
