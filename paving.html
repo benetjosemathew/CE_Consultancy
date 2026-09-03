@@ -80,9 +80,14 @@
   #statusMsg.ok{ color:#1c7a3e; }
   .config-status{ font-size:.78rem; color:var(--muted); margin-bottom:8px; }
   .config-status.bad{ color:var(--danger); }
-  .sig-row{ display:flex; gap:12px; align-items:flex-end; margin-bottom:10px; flex-wrap:wrap; }
-  .sig-row .field{ flex:1 1 220px; }
-  .sig-row .field.other-name{ flex:1 1 220px; }
+  .sig-cols{ display:flex; gap:24px; flex-wrap:wrap; }
+  .sig-col{ flex:1 1 220px; min-width:200px; }
+  .sig-col > label{ display:block; margin-bottom:6px; }
+  .sig-name-row{ display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
+  .sig-name-row .field{ flex:1 1 auto; }
+  .sig-name-row .field.other-name{ flex:1 1 auto; margin-top:0; }
+  .remove-name-btn{ background:none; border:1px solid var(--line); color:var(--danger); border-radius:5px; padding:6px 9px; font-size:.8rem; line-height:1; cursor:pointer; flex:0 0 auto; }
+  .add-name-btn{ background:#fff; color:var(--accent); border:1px solid var(--accent); padding:5px 10px; font-size:.78rem; border-radius:5px; }
   .advanced-toggle-row{ text-align:center; margin:18px 0 6px; }
   .advanced-toggle-btn{
     background:none; border:none; color:var(--muted); font-size:.75rem; font-weight:400;
@@ -349,7 +354,7 @@
 
   <div class="card">
     <h2>7. Signatories</h2>
-    <p class="hint">Role labels come from Config; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet.</p>
+    <p class="hint">Role labels come from Config; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet. Use "+ Add name" to add more than one name under "Test performed by" or "Investigators".</p>
     <div id="signatoryFields"></div>
   </div>
 
@@ -447,9 +452,8 @@ const DEFAULT_INITIAL_SPECIMENS = 3;
 let CONFIG = {
   ReportPrefix: 'CON/CE/SCL/',
   RoleLabel1: 'Test performed by',
-  RoleLabel2: 'Investigator 1',
-  RoleLabel3: 'Investigator 2',
-  RoleLabel4: 'HoD'
+  RoleLabel2: 'Investigators',
+  RoleLabel3: 'HoD'
 };
 let NAMES = { general: [], testPerformedBy: [], hod: [] };
 let selectedAddress = null; // { addressId, address }
@@ -640,82 +644,182 @@ function renderFooterReportCount(count){
 }
 
 /* =========================================================================
-   Signatories — driven by CONFIG.RoleLabel1-4 and the 3 Names pools
+   Signatories — 3 columns: "Test performed by" and "Investigators" each
+   support multiple names (use "+ Add name" / the "✕" button); HoD is a
+   single name. Names for each column come from the Names pools loaded
+   from Config. Column labels are CONFIG.RoleLabel1 (Test performed by),
+   RoleLabel2 (Investigators), RoleLabel3 (HoD).
    ========================================================================= */
-// 1 = Test performed by (own column, auto-fills if it has exactly one name)
-// 2 & 3 = Investigator 1 / 2 (share the general Name column)
-// 4 = HoD (own column, auto-fills if it has exactly one name)
-function namesForSlot(n){
-  if (n === 1) return NAMES.testPerformedBy;
-  if (n === 4) return NAMES.hod;
-  return NAMES.general;
+let sigNameCounts = { 1: 2, 2: 2 }; // picker rows currently shown for col 1 / col 2 (HoD is always exactly 1)
+
+function namesForCol(col){
+  if (col === 1) return NAMES.testPerformedBy;
+  if (col === 'hod') return NAMES.hod;
+  return NAMES.general; // col 2 (Investigators) shares the general Name pool
 }
 
-function renderSignatoryFields(){
-  const container = document.getElementById('signatoryFields');
-  if (!container) return;
-  container.innerHTML = '';
-  for (let n = 1; n <= 4; n++){
-    const label = CONFIG[`RoleLabel${n}`] || `Role ${n}`;
-    const sourceNames = namesForSlot(n);
-    const row = document.createElement('div');
-    row.className = 'sig-row';
-    row.innerHTML = `
+function sigFieldIds(col, idx){
+  if (col === 'hod') return { sel: 'sigSelectHod', wrap: 'sigOtherWrapHod', other: 'sigOtherHod' };
+  return { sel: `sigSelect${col}_${idx}`, wrap: `sigOtherWrap${col}_${idx}`, other: `sigOther${col}_${idx}` };
+}
+
+function sigPickerHtml(col, idx, sourceNames){
+  const ids = sigFieldIds(col, idx);
+  const showRemove = (col !== 'hod') && idx > 0;
+  return `
+    <div class="sig-name-row">
       <div class="field">
-        <label for="sigSelect${n}">${escapeHtml(label)}${n === 1 ? ' *' : ''}</label>
-        <select id="sigSelect${n}">
+        <select id="${ids.sel}">
           <option value="">-- Select --</option>
           ${sourceNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
           <option value="__other__">Other (type manually)</option>
         </select>
       </div>
-      <div class="field other-name" id="sigOtherWrap${n}" style="display:none;">
-        <label for="sigOther${n}">Name (typed)</label>
-        <input type="text" id="sigOther${n}" placeholder="Type name">
+      <div class="field other-name" id="${ids.wrap}" style="display:none;">
+        <input type="text" id="${ids.other}" placeholder="Type name">
       </div>
-    `;
-    container.appendChild(row);
-    const select = row.querySelector(`#sigSelect${n}`);
-    if (sourceNames.length === 1) {
-      select.value = sourceNames[0]; // auto-fill when the source list has exactly one name
-    }
-    select.addEventListener('change', (e) => {
-      document.getElementById(`sigOtherWrap${n}`).style.display = (e.target.value === '__other__') ? 'flex' : 'none';
+      ${showRemove ? `<button type="button" class="remove-name-btn" data-col="${col}" data-idx="${idx}" title="Remove this name">✕</button>` : ''}
+    </div>
+  `;
+}
+
+function wireSigPicker(col, idx){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select) return;
+  select.addEventListener('change', (e) => {
+    document.getElementById(ids.wrap).style.display = (e.target.value === '__other__') ? 'flex' : 'none';
+  });
+}
+
+function readSigPickerValue(col, idx){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select) return '';
+  if (select.value === '__other__') {
+    const other = document.getElementById(ids.other);
+    return other ? other.value.trim() : '';
+  }
+  return select.value.trim();
+}
+
+function setSigPickerValue(col, idx, value){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select || !value) return;
+  const hasOption = Array.from(select.options).some(o => o.value === value);
+  const wrap = document.getElementById(ids.wrap);
+  if (hasOption) {
+    select.value = value;
+    if (wrap) wrap.style.display = 'none';
+  } else {
+    select.value = '__other__';
+    if (wrap) wrap.style.display = 'flex';
+    const other = document.getElementById(ids.other);
+    if (other) other.value = value;
+  }
+}
+
+function captureSigValues(){
+  const col1 = [];
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) col1.push(readSigPickerValue(1, idx));
+  const col2 = [];
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) col2.push(readSigPickerValue(2, idx));
+  return { col1, col2, hod: readSigPickerValue('hod', 0) };
+}
+
+function renderSignatoryFields(prevValues){
+  const container = document.getElementById('signatoryFields');
+  if (!container) return;
+  const label1 = CONFIG.RoleLabel1 || 'Test performed by';
+  const label2 = CONFIG.RoleLabel2 || 'Investigators';
+  const label3 = CONFIG.RoleLabel3 || 'HoD';
+
+  let col1Rows = '';
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) col1Rows += sigPickerHtml(1, idx, namesForCol(1));
+  let col2Rows = '';
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) col2Rows += sigPickerHtml(2, idx, namesForCol(2));
+  const hodRow = sigPickerHtml('hod', 0, namesForCol('hod'));
+
+  container.innerHTML = `
+    <div class="sig-cols">
+      <div class="sig-col">
+        <label>${escapeHtml(label1)} *</label>
+        <div id="sigRows1">${col1Rows}</div>
+        <button type="button" class="add-name-btn" data-col="1">+ Add name</button>
+      </div>
+      <div class="sig-col">
+        <label>${escapeHtml(label2)}</label>
+        <div id="sigRows2">${col2Rows}</div>
+        <button type="button" class="add-name-btn" data-col="2">+ Add name</button>
+      </div>
+      <div class="sig-col">
+        <label>${escapeHtml(label3)}</label>
+        <div id="sigRowsHod">${hodRow}</div>
+      </div>
+    </div>
+  `;
+
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) wireSigPicker(1, idx);
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) wireSigPicker(2, idx);
+  wireSigPicker('hod', 0);
+
+  container.querySelectorAll('.add-name-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = Number(btn.getAttribute('data-col'));
+      const vals = captureSigValues();
+      sigNameCounts[col]++;
+      renderSignatoryFields(vals);
     });
+  });
+  container.querySelectorAll('.remove-name-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = Number(btn.getAttribute('data-col'));
+      const idx = Number(btn.getAttribute('data-idx'));
+      const vals = captureSigValues();
+      (col === 1 ? vals.col1 : vals.col2).splice(idx, 1);
+      sigNameCounts[col]--;
+      renderSignatoryFields(vals);
+    });
+  });
+
+  if (prevValues) {
+    prevValues.col1.forEach((v, idx) => setSigPickerValue(1, idx, v));
+    prevValues.col2.forEach((v, idx) => setSigPickerValue(2, idx, v));
+    setSigPickerValue('hod', 0, prevValues.hod);
+  } else {
+    // auto-fill when a pool has exactly one name
+    if (namesForCol(1).length === 1) setSigPickerValue(1, 0, namesForCol(1)[0]);
+    if (namesForCol('hod').length === 1) setSigPickerValue('hod', 0, namesForCol('hod')[0]);
   }
 }
 
 function getSignatories(){
-  // [{ role, name }], only slots that were actually filled in — used for the docx signatory table.
+  // [{ role, names: [...] }], only columns with at least one filled name — used for the docx signatory table.
   const result = [];
-  for (let n = 1; n <= 4; n++){
-    const select = document.getElementById(`sigSelect${n}`);
-    if (!select) continue;
-    let name = '';
-    if (select.value === '__other__') {
-      name = document.getElementById(`sigOther${n}`).value.trim();
-    } else {
-      name = select.value.trim();
-    }
-    if (name) result.push({ role: CONFIG[`RoleLabel${n}`] || `Role ${n}`, name });
-  }
+  const col1Names = [];
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) { const v = readSigPickerValue(1, idx); if (v) col1Names.push(v); }
+  if (col1Names.length) result.push({ role: CONFIG.RoleLabel1 || 'Test performed by', names: col1Names });
+
+  const col2Names = [];
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) { const v = readSigPickerValue(2, idx); if (v) col2Names.push(v); }
+  if (col2Names.length) result.push({ role: CONFIG.RoleLabel2 || 'Investigators', names: col2Names });
+
+  const hodName = readSigPickerValue('hod', 0);
+  if (hodName) result.push({ role: CONFIG.RoleLabel3 || 'HoD', names: [hodName] });
+
   return result;
 }
 
 function getSignatoryNamesBySlot(){
-  // { slot1..slot4: name or '' } — used for ReportLog columns (name only, no role) and snapshots.
-  const out = {};
-  for (let n = 1; n <= 4; n++){
-    const select = document.getElementById(`sigSelect${n}`);
-    let name = '';
-    if (select) {
-      name = (select.value === '__other__')
-        ? document.getElementById(`sigOther${n}`).value.trim()
-        : select.value.trim();
-    }
-    out[`slot${n}`] = name;
-  }
-  return out;
+  // { testPerformedBy: [...], investigators: [...], hod: name or '' } — used for
+  // ReportLog columns (name only, no role) and snapshots.
+  const vals = captureSigValues();
+  return {
+    testPerformedBy: vals.col1.filter(Boolean),
+    investigators: vals.col2.filter(Boolean),
+    hod: vals.hod
+  };
 }
 
 /* =========================================================================
@@ -927,23 +1031,23 @@ function applyFormSnapshot(snapshot){
   }
 
   if (snapshot.signatories) {
-    for (let n = 1; n <= 4; n++){
-      const name = snapshot.signatories[`slot${n}`];
-      if (!name) continue;
-      const select = document.getElementById(`sigSelect${n}`);
-      if (!select) continue;
-      const otherWrap = document.getElementById(`sigOtherWrap${n}`);
-      const hasOption = Array.from(select.options).some(o => o.value === name);
-      if (hasOption) {
-        select.value = name;
-        if (otherWrap) otherWrap.style.display = 'none';
-      } else {
-        select.value = '__other__';
-        if (otherWrap) otherWrap.style.display = 'flex';
-        const otherInput = document.getElementById(`sigOther${n}`);
-        if (otherInput) otherInput.value = name;
-      }
+    const s = snapshot.signatories;
+    let col1, col2, hod;
+    if (s.testPerformedBy || s.investigators || s.hod) {
+      // current (3-column) format
+      col1 = s.testPerformedBy || [];
+      col2 = s.investigators || [];
+      hod = s.hod || '';
+    } else {
+      // legacy format saved before the 3-column layout
+      // (slot1: Test performed by, slot2/slot3: Investigator 1/2, slot4: HoD)
+      col1 = s.slot1 ? [s.slot1] : [];
+      col2 = [s.slot2, s.slot3].filter(Boolean);
+      hod = s.slot4 || '';
     }
+    sigNameCounts[1] = Math.max(col1.length, 1);
+    sigNameCounts[2] = Math.max(col2.length, 1);
+    renderSignatoryFields({ col1: col1.length ? col1 : [''], col2: col2.length ? col2 : [''], hod });
   }
 
   if (typeof applyPageSnapshot === 'function') applyPageSnapshot(snapshot);
@@ -1089,7 +1193,7 @@ async function onGenerate(){
     renderLastSubmittedInfo({
       pageNumber: document.getElementById('pageNumber').value.trim(),
       reportNo: composedReportNumber(),
-      investigator1: sigForDisplay.slot2
+      investigator1: sigForDisplay.investigators[0] || ''
     });
     logReportToSheet(); // best-effort; never blocks or reverts the download above
   } catch (err) {
@@ -1114,10 +1218,10 @@ async function logReportToSheet(){
       date: fmtDate(document.getElementById('reportDate').value),
       addresseeId: selectedAddress ? selectedAddress.addressId : '',
       avgStrength: (avgStrength !== null && avgStrength !== undefined && avgStrength !== '' && !isNaN(avgStrength)) ? Number(Number(avgStrength).toFixed(2)) : '',
-      testPerformedBy: sig.slot1,
-      investigator1: sig.slot2,
-      investigator2: sig.slot3,
-      hod: sig.slot4,
+      testPerformedBy: sig.testPerformedBy.join(', '),
+      investigator1: sig.investigators[0] || '',
+      investigator2: sig.investigators.slice(1).join(', '),
+      hod: sig.hod,
       formDataJSON: JSON.stringify(collectFormSnapshot())
     };
     const res = await fetch(`${APPS_SCRIPT_URL}?action=logReport`, {
@@ -1473,10 +1577,8 @@ function validateForm(){
   // and NOTES estimates a grade from the mean corrected compressive strength instead.
   if (!document.getElementById('testingDate').value) errors.push('Date of Testing is required.');
 
-  const sig1Select = document.getElementById('sigSelect1');
-  const sig1Other = document.getElementById('sigOther1');
-  const sig1Filled = sig1Select && (sig1Select.value === '__other__' ? (sig1Other && sig1Other.value.trim()) : sig1Select.value.trim());
-  if (!sig1Filled) errors.push(`"${CONFIG.RoleLabel1 || 'Role 1'}" signatory is required.`);
+  const sig1Filled = getSignatoryNamesBySlot().testPerformedBy.length > 0;
+  if (!sig1Filled) errors.push(`"${CONFIG.RoleLabel1 || 'Test performed by'}" signatory is required.`);
 
   const sel = getSelectedTests();
   if (!sel.compressive && !sel.absorption && !sel.abrasion) {
@@ -2200,7 +2302,7 @@ async function buildDocx(){
       children: [
         new Paragraph({ text: '' }), new Paragraph({ text: '' }),
         new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.role, { bold: true }) ] }),
-        new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.name) ] })
+        ...sig.names.map(name => new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(name) ] }))
       ]
     }));
     children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: noBorders, rows: [ new TableRow({ children: sigCells }) ] }));
