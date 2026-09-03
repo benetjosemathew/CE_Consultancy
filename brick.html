@@ -323,7 +323,7 @@
 
   <div class="card">
     <h2>7. Signatories</h2>
-    <p class="hint">Role labels come from Config; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet. Use "+ Add name" to add more than one name under "Test performed by" or "Investigators".</p>
+    <p class="hint">Column headings ("Test performed by" / "Investigators" / "HoD") are fixed; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet. Use "+ Add name" to add more than one name under "Test performed by" or "Investigators".</p>
     <div id="signatoryFields"></div>
   </div>
 
@@ -420,10 +420,10 @@ const DEFAULT_INITIAL_SPECIMENS = 3;
    ========================================================================= */
 let CONFIG = {
   ReportPrefix: 'CON/CE/SCL/',
-  RoleLabel1: 'Test performed by',
-  RoleLabel2: 'Investigators',
-  RoleLabel3: 'HoD'
 };
+// Signatory column labels are fixed (not sourced from the remote Config sheet,
+// which may still have old-scheme role labels from before the 3-column layout).
+const SIG_LABELS = { col1: 'Test performed by', col2: 'Investigators', hod: 'HoD' };
 let NAMES = { general: [], testPerformedBy: [], hod: [] };
 let selectedAddress = null; // { addressId, address }
 let configLoaded = false;
@@ -616,8 +616,8 @@ function renderFooterReportCount(count){
    Signatories — 3 columns: "Test performed by" and "Investigators" each
    support multiple names (use "+ Add name" / the "✕" button); HoD is a
    single name. Names for each column come from the Names pools loaded
-   from Config. Column labels are CONFIG.RoleLabel1 (Test performed by),
-   RoleLabel2 (Investigators), RoleLabel3 (HoD).
+   from Config. Column labels are fixed via SIG_LABELS (not read from the
+   remote Config sheet — see note above CONFIG).
    ========================================================================= */
 let sigNameCounts = { 1: 2, 2: 2 }; // picker rows currently shown for col 1 / col 2 (HoD is always exactly 1)
 
@@ -700,9 +700,9 @@ function captureSigValues(){
 function renderSignatoryFields(prevValues){
   const container = document.getElementById('signatoryFields');
   if (!container) return;
-  const label1 = CONFIG.RoleLabel1 || 'Test performed by';
-  const label2 = CONFIG.RoleLabel2 || 'Investigators';
-  const label3 = CONFIG.RoleLabel3 || 'HoD';
+  const label1 = SIG_LABELS.col1;
+  const label2 = SIG_LABELS.col2;
+  const label3 = SIG_LABELS.hod;
 
   let col1Rows = '';
   for (let idx = 0; idx < sigNameCounts[1]; idx++) col1Rows += sigPickerHtml(1, idx, namesForCol(1));
@@ -768,14 +768,14 @@ function getSignatories(){
   const result = [];
   const col1Names = [];
   for (let idx = 0; idx < sigNameCounts[1]; idx++) { const v = readSigPickerValue(1, idx); if (v) col1Names.push(v); }
-  if (col1Names.length) result.push({ role: CONFIG.RoleLabel1 || 'Test performed by', names: col1Names });
+  if (col1Names.length) result.push({ role: SIG_LABELS.col1, names: col1Names });
 
   const col2Names = [];
   for (let idx = 0; idx < sigNameCounts[2]; idx++) { const v = readSigPickerValue(2, idx); if (v) col2Names.push(v); }
-  if (col2Names.length) result.push({ role: CONFIG.RoleLabel2 || 'Investigators', names: col2Names });
+  if (col2Names.length) result.push({ role: SIG_LABELS.col2, names: col2Names });
 
   const hodName = readSigPickerValue('hod', 0);
-  if (hodName) result.push({ role: CONFIG.RoleLabel3 || 'HoD', names: [hodName] });
+  if (hodName) result.push({ role: SIG_LABELS.hod, names: [hodName] });
 
   return result;
 }
@@ -1410,7 +1410,7 @@ function validateForm(){
   if (!document.getElementById('testingDate').value) errors.push('Date of Testing is required.');
 
   const sig1Filled = getSignatoryNamesBySlot().testPerformedBy.length > 0;
-  if (!sig1Filled) errors.push(`"${CONFIG.RoleLabel1 || 'Test performed by'}" signatory is required.`);
+  if (!sig1Filled) errors.push(`"${SIG_LABELS.col1}" signatory is required.`);
 
   const sel = getSelectedTests();
   if (!sel.compressive && !sel.absorption && !sel.efflorescence) {
