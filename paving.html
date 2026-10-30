@@ -1,0 +1,3318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Paving Block Test Certificate Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<style>
+  :root{
+    --ink:#1c2430; --muted:#5b6472; --line:#d8dde3; --bg:#f5f6f8;
+    --accent:#2a5d8f; --accent-light:#eaf1f8; --danger:#b3392c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family: "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--ink);
+    margin:0; padding:24px;
+  }
+  .wrap{ max-width:920px; margin:0 auto; }
+  h1{ font-size:1.4rem; margin-bottom:2px; }
+  .subtitle{ color:var(--muted); margin-top:0; margin-bottom:20px; font-size:.9rem; }
+  .site-nav{ font-size:.85rem; margin-bottom:14px; }
+  .site-nav a{ color:var(--accent); text-decoration:none; margin-right:14px; }
+  .site-nav a.current{ color:var(--ink); font-weight:600; text-decoration:none; cursor:default; }
+  .site-nav a:hover{ text-decoration:underline; }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .card h2{ font-size:1rem; margin:0 0 12px 0; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:8px;}
+  .row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px; }
+  .field{ flex:1 1 180px; display:flex; flex-direction:column; gap:4px; }
+  .field.narrow{ flex:0 0 90px; }
+  label{ font-size:.78rem; color:var(--muted); font-weight:600; }
+  input, select, textarea{
+    padding:7px 8px; border:1px solid var(--line); border-radius:5px; font-size:.9rem;
+    font-family:inherit; width:100%;
+  }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent-light); border-color:var(--accent); }
+  .hint{ font-size:.72rem; color:var(--muted); margin-top:2px; }
+  .preview-box{
+    background:var(--accent-light); border:1px solid var(--accent); border-radius:5px;
+    padding:8px 10px; font-family:monospace; font-size:.95rem; margin-top:6px;
+  }
+  table.specimen{ width:100%; border-collapse:collapse; margin-top:6px; }
+  table.specimen th, table.specimen td{
+    border:1px solid var(--line); padding:6px 8px; font-size:.85rem; text-align:center;
+  }
+  table.specimen th{ background:#f0f2f5; font-weight:600; font-size:.75rem; }
+  table.specimen input, table.specimen select{ text-align:center; padding:5px; }
+  table.specimen td.calc{ background:#fbfcfd; font-weight:600; color:var(--accent); }
+  .remove-specimen-btn{ padding:3px 8px; font-size:.8rem; border-color:var(--danger); color:var(--danger); }
+  .checkbox-row{ display:flex; gap:20px; flex-wrap:wrap; margin-bottom:6px; }
+  .checkbox-row label{ display:flex; align-items:center; gap:6px; font-size:.88rem; color:var(--ink); font-weight:400; }
+  .checkbox-row input[type="checkbox"]{ width:auto; }
+  #addressSearchWrap{ position:relative; }
+  #addressResults{
+    position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--line);
+    border-top:none; max-height:220px; overflow-y:auto; z-index:20; border-radius:0 0 6px 6px;
+    box-shadow:0 6px 12px rgba(0,0,0,.08);
+  }
+  .addr-option{ padding:8px 10px; cursor:pointer; font-size:.85rem; white-space:pre-line; border-bottom:1px solid var(--line); }
+  .addr-option:hover{ background:var(--accent-light); }
+  .addr-option .id{ color:var(--muted); font-size:.72rem; display:block; margin-bottom:2px; }
+  #selectedAddress{
+    white-space:pre-line; background:var(--accent-light); border:1px solid var(--accent);
+    border-radius:5px; padding:8px 10px; font-size:.85rem; margin-top:8px; display:none;
+  }
+  #selectedAddress button{ float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:.8rem; }
+  .add-address-form{ display:none; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+  .add-address-form textarea{ min-height:80px; }
+  button{
+    background:var(--accent); color:#fff; border:none; border-radius:6px; padding:9px 16px;
+    font-size:.88rem; cursor:pointer; font-weight:600;
+  }
+  button.secondary{ background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  #generateBtn{ font-size:1rem; padding:12px 22px; }
+  #statusMsg{ margin-top:10px; font-size:.85rem; }
+  #statusMsg.error{ color:var(--danger); }
+  #statusMsg.ok{ color:#1c7a3e; }
+  .config-status{ font-size:.78rem; color:var(--muted); margin-bottom:8px; }
+  .config-status.bad{ color:var(--danger); }
+  .sig-cols{ display:flex; gap:24px; flex-wrap:wrap; }
+  .sig-col{ flex:1 1 220px; min-width:200px; }
+  .sig-col > label{ display:block; margin-bottom:6px; }
+  .sig-name-row{ display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
+  .sig-name-row .field{ flex:1 1 auto; }
+  .sig-name-row .field.other-name{ flex:1 1 auto; margin-top:0; }
+  .remove-name-btn{ background:none; border:1px solid var(--line); color:var(--danger); border-radius:5px; padding:6px 9px; font-size:.8rem; line-height:1; cursor:pointer; flex:0 0 auto; }
+  .add-name-btn{ background:#fff; color:var(--accent); border:1px solid var(--accent); padding:5px 10px; font-size:.78rem; border-radius:5px; }
+  .advanced-toggle-row{ text-align:center; margin:18px 0 6px; }
+  .advanced-toggle-btn{
+    background:none; border:none; color:var(--muted); font-size:.75rem; font-weight:400;
+    cursor:pointer; padding:4px 8px; text-decoration:underline; text-decoration-style:dotted;
+  }
+  .advanced-toggle-btn:hover{ color:var(--accent); }
+  .advanced-section .card{ border-style:dashed; }
+  .backup-result{
+    padding:8px 10px; border:1px solid var(--line); border-radius:5px; margin-top:6px;
+    font-size:.82rem; cursor:pointer;
+  }
+  .backup-result:hover{ background:var(--accent-light); }
+  .prompt-scope{
+    background:var(--accent-light); border:1px solid var(--accent); border-radius:5px;
+    padding:8px 10px; font-size:.82rem; margin:6px 0 4px; line-height:1.45;
+  }
+  .prompt-scope.bad{ background:#fbecea; border-color:var(--danger); color:var(--danger); }
+  .abrasion-cycle-table tr.edge-row td:first-child{ color:var(--muted); font-size:.78rem; }
+  .abrasion-cycle-table tr.avg-row td:first-child{ font-weight:600; }
+  input.computed{ background:#fbfcfd; color:var(--accent); font-weight:600; }
+  .edge-thickness-wrap{ display:none; gap:6px; align-items:flex-end; flex-wrap:wrap; }
+  .edge-thickness-wrap input{ width:80px; }
+  .four-edge-label{ font-size:.82rem; display:flex; align-items:center; gap:6px; color:var(--ink); font-weight:400; }
+  .four-edge-label input{ width:auto; }
+  .hide-water .water-col{ display:none; }
+  .shaped-blocks .rect-only{ display:none; }
+  .site-footer{
+    margin-top:28px; padding:16px 0 8px; border-top:1px solid var(--line);
+    text-align:center; font-size:.75rem; color:var(--muted);
+  }
+  .site-footer p{ margin:2px 0; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="site-nav">
+    <a href="index.html">Cube Test</a>
+    <a href="brick.html">Brick Test</a>
+    <a href="paving.html" class="current">Paving Block Test</a>
+    <a href="soilblock.html">Soil Block Test</a>
+  </div>
+  <h1>Concrete Paving Blocks (IS 15658:2021) — Report Generator</h1>
+  <p class="subtitle">Fills a lab test certificate .docx from your data. Prints on existing letterhead — no header/footer is added.</p>
+
+  <div class="card">
+    <h2>Backend status</h2>
+    <div id="configStatus" class="config-status">Loading configuration from Google Sheet…</div>
+  </div>
+
+  <div class="card">
+    <h2>1. Report Number &amp; Date</h2>
+    <div id="lastSubmittedInfo" class="hint" style="margin-bottom:10px;">Loading last submitted report…</div>
+    <div class="row">
+      <div class="field narrow">
+        <label for="reportNum">Report No.</label>
+        <input type="text" id="reportNum" placeholder="e.g. 3" inputmode="numeric">
+      </div>
+      <div class="field narrow">
+        <label for="reportMonth">Month</label>
+        <select id="reportMonth"></select>
+      </div>
+      <div class="field narrow">
+        <label for="reportYear">Year</label>
+        <input type="number" id="reportYear" min="2000" max="2100">
+      </div>
+      <div class="field">
+        <label for="reportDate">Report Date</label>
+        <input type="date" id="reportDate">
+      </div>
+    </div>
+    <div class="hint">Composed report number (numbering is continuous with the Cube reports — same lab, one sequence):</div>
+    <div class="preview-box" id="reportNumPreview">—</div>
+    <div class="row" style="margin-top:10px;">
+      <div class="field narrow">
+        <label for="pageNumber">Result Page No.</label>
+        <input type="text" id="pageNumber" placeholder="e.g. 42 or 12-A">
+      </div>
+    </div>
+    <div class="hint">The page number where this result is recorded in your register — letters and hyphens allowed (e.g. "12-A"). Stored in the report log; not printed on the certificate itself.</div>
+  </div>
+
+  <div class="card">
+    <h2>2. Addressee ("To:")</h2>
+    <div id="addressSearchWrap">
+      <label for="addressSearch">Search existing address book</label>
+      <input type="text" id="addressSearch" placeholder="Type a name, office, or ID…" autocomplete="off">
+      <div id="addressResults" style="display:none;"></div>
+    </div>
+    <div id="selectedAddress"></div>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="showAddAddressBtn">+ Add new address</button>
+    </div>
+    <div class="add-address-form" id="addAddressForm">
+      <label for="newAddressShort">Address Short (optional — leave blank to auto-generate)</label>
+      <input type="text" id="newAddressShort" placeholder="e.g. PDY-AE">
+      <label for="newAddressText" style="margin-top:8px;">New address (multi-line, e.g. name / designation / office)</label>
+      <textarea id="newAddressText" placeholder="The Assistant Engineer&#10;LID&amp;EW Division&#10;PDY"></textarea>
+      <div class="toolbar">
+        <button type="button" id="saveAddressBtn">Save &amp; use</button>
+        <button type="button" class="secondary" id="cancelAddAddressBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <h2>3. References (leave blank for "Not Specified")</h2>
+    <div class="row">
+      <div class="field">
+        <label for="workDesc">Work Description</label>
+        <input type="text" id="workDesc" placeholder="e.g. SO 188/25-26 PDY Erattupetta town square footpath paving work">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="aeLetterRef">AE Letter Reference</label>
+        <input type="text" id="aeLetterRef" placeholder="e.g. 33/AE/RD/PDY/2025-26">
+      </div>
+      <div class="field narrow">
+        <label for="aeLetterDate">AE Letter Date</label>
+        <input type="date" id="aeLetterDate">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="agreementNumber">Agreement Number</label>
+        <input type="text" id="agreementNumber" placeholder="e.g. 33/AE/RD/PDY/2025-26">
+      </div>
+      <div class="field narrow">
+        <label for="agreementDate">Agreement Date</label>
+        <input type="date" id="agreementDate">
+      </div>
+    </div>
+    <div class="hint">Two optional extra references (only appear in the document if filled in):</div>
+    <div class="row">
+      <div class="field">
+        <label for="extraRef1">Extra Reference 1 (optional)</label>
+        <input type="text" id="extraRef1" placeholder="Free text">
+      </div>
+      <div class="field">
+        <label for="extraRef2">Extra Reference 2 (optional)</label>
+        <input type="text" id="extraRef2" placeholder="Free text">
+      </div>
+    </div>
+    <div class="hint">The IS 15658:2021 reference (with Annex C/D/E as relevant) is added automatically below, based on whichever tests you select.</div>
+  </div>
+
+  <div class="card">
+    <h2>4. Paving Block Details</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="blockGrade">Block Grade</label>
+        <input type="text" id="blockGrade" placeholder="e.g. M35 (leave blank if not known — a grade will be estimated from strength)">
+      </div>
+      <div class="field">
+        <label for="nominalSize">Nominal Size (overall L × W × Th)</label>
+        <input type="text" id="nominalSize" value="200 x 100 x 80 mm">
+      </div>
+      <div class="field narrow">
+        <label for="blockShape">Block Shape</label>
+        <select id="blockShape">
+          <option value="rect">Rectangular</option>
+          <option value="shaped">Zig-zag / interlocking (shaped)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="sourceSupplier">Source / Supplier</label>
+        <input type="text" id="sourceSupplier" placeholder="e.g. Erattupetta Precast Yard">
+      </div>
+      <div class="field">
+        <label for="testingDate">Date of Testing *</label>
+        <input type="date" id="testingDate">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="receiptDate">Date of Receipt of Specimen</label>
+        <input type="date" id="receiptDate">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5. Choice of Tests (at least one required)</h2>
+    <div class="checkbox-row">
+      <label><input type="checkbox" id="testCompressive" checked> Compressive Strength</label>
+      <label><input type="checkbox" id="testAbsorption" checked> Water Absorption</label>
+      <label><input type="checkbox" id="testAbrasion" checked> Abrasion Resistance</label>
+      <label><input type="checkbox" id="testDimensions"> Visual Inspection &amp; Dimensions</label>
+    </div>
+  </div>
+
+  <div class="card" id="compressiveCard">
+    <h2>6A. Compressive Strength — Specimens</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="paverThickness">Nominal Block Thickness (mm) *</label>
+        <input type="number" step="any" id="paverThickness" placeholder="e.g. 80">
+      </div>
+      <div class="field narrow">
+        <label for="paverArris">Block Edge *</label>
+        <select id="paverArris">
+          <option value="">-- Select --</option>
+          <option value="plain">Plain</option>
+          <option value="chamfered">Arrised / Chamfered</option>
+        </select>
+      </div>
+      <div class="field narrow">
+        <label>Correction Factor (IS 15658:2021 Table 5)</label>
+        <div class="preview-box" id="correctionFactorDisplay" style="margin-top:0;">—</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label><input type="checkbox" id="correctionFactorManualToggle" style="width:auto;"> Override with a manually entered factor (e.g. thickness outside the 50–120mm table range)</label>
+      </div>
+    </div>
+    <div class="row" id="correctionFactorManualRow" style="display:none;">
+      <div class="field narrow">
+        <label for="correctionFactorManual">Manual Correction Factor</label>
+        <input type="number" step="any" id="correctionFactorManual" placeholder="e.g. 0.87">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field narrow">
+        <label for="establishedSD">Established Std. Deviation (MPa)</label>
+        <input type="number" step="any" id="establishedSD" placeholder="blank = 5 MPa">
+      </div>
+      <div class="field">
+        <div class="hint" style="margin-top:20px;">IS 15658:2021 Table 3: average ≥ fck + 0.825 × SD (rounded to 0.5 MPa) or fck + 3, whichever is greater; individual ≥ fck − 3. Leave blank to use SD = 5 MPa (Table 3 Note 2). Table 4 calls for 8 blocks (third-party QA) or 4 blocks (manufacturer/purchaser QA).</div>
+      </div>
+    </div>
+    <div class="hint">Applied identically to every specimen's apparent strength — cited in the document as a note rather than a repeated column. Table 5 values are looked up exactly at 50/60/80/100/120mm and linearly interpolated in between, per the standard's own note.</div>
+    <div class="row" style="margin-top:10px;">
+      <div class="field" id="planAreaMethodField" style="display:none;">
+        <label for="planAreaMethod">Plan Area Method (IS 15658:2021 B-3.3)</label>
+        <select id="planAreaMethod">
+          <option value="water">Water method — each block (B-3.3.1, Method 1)</option>
+          <option value="cardboard">Cardboard tracing — one trace for all (B-3.3.2, Method 2)</option>
+          <option value="direct">Enter plan area directly</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" id="cardboardRow" style="display:none;">
+      <div class="field narrow">
+        <label for="cbBlockMass">Mass of Block Tracing, m<sub>sp</sub> (g)</label>
+        <input type="number" step="any" id="cbBlockMass">
+      </div>
+      <div class="field narrow">
+        <label for="cbRectMass">Mass of 200 × 100 mm Rectangle, m<sub>std</sub> (g)</label>
+        <input type="number" step="any" id="cbRectMass">
+      </div>
+      <div class="field narrow">
+        <label>Plan Area (computed)</label>
+        <div class="preview-box" id="cbAreaDisplay" style="margin-top:0;">—</div>
+      </div>
+    </div>
+    <div class="hint" id="planAreaHint"></div>
+    <table class="specimen hide-water" id="compressiveTable">
+      <thead>
+        <tr>
+          <th>Sl No</th><th class="water-col">Weight in Water (g)</th><th class="water-col">Saturated Surface-Dry Weight (g)</th><th class="water-col">Mean Thickness (mm)</th><th>Plan Area (sq.cm)</th><th>Weight (kg)</th><th>Load (kN)</th>
+          <th>Apparent Strength (N/mm²)</th><th>Corrected Strength (N/mm²)</th><th>Average (N/mm²)</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="compressiveBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addCompressiveBtn">+ Add specimen</button>
+      <span class="hint" id="compressiveCountHint"></span>
+    </div>
+  </div>
+
+  <div class="card" id="absorptionCard">
+    <h2>6B. Water Absorption — Specimens</h2>
+    <table class="specimen" id="absorptionTable">
+      <thead>
+        <tr>
+          <th>Sl No</th><th>Dry Weight (kg)</th><th>Wet Weight (kg)</th>
+          <th>Absorption (%)</th><th>Mean Absorption (%)</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="absorptionBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addAbsorptionBtn">+ Add specimen</button>
+      <span class="hint" id="absorptionCountHint"></span>
+    </div>
+  </div>
+
+  <div class="card" id="abrasionCard">
+    <h2>6C. Abrasion Resistance (IS 15658:2021 Annex E — abrasion disc, 16 cycles) — Specimens</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="abrasionCondition">Specimen Condition *</label>
+        <select id="abrasionCondition">
+          <option value="dry">Dry (E-2.2)</option>
+          <option value="wet">Wet / saturated (E-2.3)</option>
+        </select>
+      </div>
+      <div class="field narrow">
+        <label for="abrasionSurfaceArea">Surface Area (sq.mm)</label>
+        <input type="number" step="any" id="abrasionSurfaceArea" placeholder="e.g. 5041 (71 × 71)">
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <label class="four-edge-label"><input type="checkbox" id="abrasionSameArea" checked> Same surface area for all specimens</label>
+      </div>
+    </div>
+    <div class="hint">Table 3 limits (mm³ per 5000 mm², max): Dry — individual 20 000, average 18 000. Wet — individual 22 000, average 20 000. Specimens are 71.0 ± 0.5 mm squares, 3 per condition (Table 4). Density is worked out separately for each specimen from its own mass, area and height (ΔV = Δm / ρ, E-4).</div>
+    <div id="abrasionSpecimensContainer"></div>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addAbrasionSpecimenBtn">+ Add specimen</button>
+      <span class="hint" id="abrasionCountHint"></span>
+    </div>
+    <div id="abrasionSummary" class="prompt-scope">—</div>
+  </div>
+
+  <div class="card" id="dimensionCard">
+    <h2>6D. Visual Inspection &amp; Dimensions (IS 15658:2021 Cl. 7.1, 7.2, Annex B)</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="declaredLength">Declared Length (mm)</label>
+        <input type="number" step="any" id="declaredLength" placeholder="from Nominal Size">
+      </div>
+      <div class="field narrow">
+        <label for="declaredWidth">Declared Width (mm)</label>
+        <input type="number" step="any" id="declaredWidth" placeholder="from Nominal Size">
+      </div>
+      <div class="field narrow">
+        <label for="declaredThickness">Declared Thickness (mm)</label>
+        <input type="number" step="any" id="declaredThickness" placeholder="from Nominal Size">
+      </div>
+      <div class="field narrow">
+        <label for="visualDefects">Blocks with Visual Defects *</label>
+        <input type="number" min="0" step="1" id="visualDefects" value="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="visualRemarks">Visual defects observed (optional — printed if filled)</label>
+        <input type="text" id="visualRemarks" placeholder="e.g. hairline crack on block 3">
+      </div>
+    </div>
+    <div class="hint" id="visualHint"></div>
+    <div class="hint" id="dimensionHint"></div>
+    <div class="row" id="wearFaceShapedRow" style="display:none; margin-top:8px;">
+      <div class="field narrow">
+        <label for="wfMsp">Mass of Block Tracing, m<sub>sp</sub> (g)</label>
+        <input type="number" step="any" id="wfMsp" placeholder="blank = compressive tracing">
+      </div>
+      <div class="field narrow">
+        <label for="wfMsw">Mass after Cutting Off Arris Strip, m<sub>sw</sub> (g)</label>
+        <input type="number" step="any" id="wfMsw">
+      </div>
+      <div class="field narrow">
+        <label>A<sub>sw</sub>/A<sub>sp</sub> (computed)</label>
+        <div class="preview-box" id="wfRatioDisplay" style="margin-top:0;">—</div>
+      </div>
+    </div>
+    <table class="specimen" id="dimensionTable">
+      <thead>
+        <tr>
+          <th>Sl No</th><th id="thDimL">Length (mm)</th><th id="thDimW">Width (mm)</th><th>Thickness (mm)</th>
+          <th>L/Th</th><th>Arris Width (mm)</th><th>Squareness Dev. (mm)</th><th class="rect-only">A<sub>sw</sub>/A<sub>sp</sub></th><th>Table 2</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="dimensionBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addDimensionBtn">+ Add block</button>
+      <span class="hint" id="dimensionCountHint"></span>
+    </div>
+    <div id="dimensionSummary" class="prompt-scope">—</div>
+  </div>
+
+
+  <div class="card">
+    <h2>7. Signatories</h2>
+    <p class="hint">Column headings ("Test performed by" / "Investigators" / "HoD") are fixed; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet. Use "+ Add name" to add more than one name under "Test performed by" or "Investigators".</p>
+    <div id="signatoryFields"></div>
+  </div>
+
+  <div class="card">
+    <h2>8. Generate</h2>
+    <div class="toolbar">
+      <button id="generateBtn">Generate Report (.docx)</button>
+      <button type="button" class="secondary" id="newReportBtn" style="display:none;">Start New Report</button>
+    </div>
+    <div id="statusMsg"></div>
+  </div>
+
+  <div class="advanced-toggle-row">
+    <button type="button" id="advancedToggleBtn" class="advanced-toggle-btn">+ Advanced</button>
+  </div>
+
+  <div id="advancedSection" class="advanced-section" style="display:none;">
+
+    <div class="card">
+      <h2>Auto-fill from Engineer Letter (optional, LLM-assisted)</h2>
+      <p class="hint">If you have a letter from the Assistant Engineer as a PDF: copy the prompt below, paste it into an LLM chat along with the PDF attached, then paste the JSON it returns here.</p>
+      <div class="toolbar">
+        <button type="button" class="secondary" id="copyPromptBtn">Copy extraction prompt</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:1 1 100%;">
+          <label for="llmJsonInput">Paste returned JSON here</label>
+          <textarea id="llmJsonInput" style="min-height:100px;" placeholder='{ "workDescription": "...", "blockGrade": "...", ... }'></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="applyJsonBtn">Apply JSON to form</button>
+      </div>
+      <div id="jsonApplyStatus" class="hint"></div>
+    </div>
+
+    <div class="card">
+      <h2>Auto-fill Specimen Data from Log Book Photo (LLM-assisted)</h2>
+      <p class="hint">Copy the prompt below, paste it into an LLM chat along with photo(s) of the log book page(s), then paste the JSON it returns here. The prompt is built from the tests ticked in section 5 — set the ticks there <strong>before</strong> copying.</p>
+      <div id="specimenPromptScope" class="prompt-scope"></div>
+      <div class="toolbar">
+        <button type="button" class="secondary" id="copySpecimenPromptBtn">Copy extraction prompt</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:1 1 100%;">
+          <label for="specimenJsonInput">Paste returned JSON here</label>
+          <textarea id="specimenJsonInput" style="min-height:100px;" placeholder='{ "compressive": [ ... ], "absorption": [ ... ], "abrasion": { ... } }'></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="applySpecimenJsonBtn">Apply JSON to specimen table</button>
+      </div>
+      <div id="specimenJsonApplyStatus" class="hint"></div>
+    </div>
+
+        <div class="card">
+      <h2>Load a Previous Report</h2>
+      <p class="hint">Search by Report No. or Page Number to pull a past report of this same type back into this form (from the JSON snapshot saved alongside the report log). Review everything before regenerating — this overwrites what's currently in the form.</p>
+      <div class="row">
+        <div class="field">
+          <label for="backupSearchInput">Search Report No. / Page No.</label>
+          <input type="text" id="backupSearchInput" placeholder="e.g. CON/CE/SCL/003032026 or 12-A">
+        </div>
+        <div class="field narrow" style="justify-content:flex-end;">
+          <button type="button" id="backupSearchBtn">Search</button>
+        </div>
+      </div>
+      <div id="backupResults"></div>
+      <div id="backupApplyStatus" class="hint"></div>
+    </div>
+
+
+  </div>
+</div>
+
+  <footer class="site-footer">
+    <p>Developed by Dept. of Civil Engineering, Amal Jyothi College of Engineering.</p>
+    <p>For queries, contact Mr. Bennet Jose Mathew.</p>
+    <p id="footerReportCount"></p>
+  </footer>
+
+
+<script>
+/* =========================================================================
+   Page identity — must be set before the shared script include below
+   ========================================================================= */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKj68-aD6FZQfuBHSHKGQ1U_jB7idm7iR6VtQww7w74PzS--tAuSGCfl6ylbt2d6Yb/exec';
+const REPORT_TYPE = 'PavingBlock';
+const MIN_SPECIMENS = 1;
+const MAX_SPECIMENS = 20;
+const DEFAULT_INITIAL_SPECIMENS = 3;
+
+/* =========================================================================
+   Shared state
+   ========================================================================= */
+let CONFIG = {
+  ReportPrefix: 'CON/CE/SCL/',
+};
+// Signatory column labels are fixed (not sourced from the remote Config sheet,
+// which may still have old-scheme role labels from before the 3-column layout).
+const SIG_LABELS = { col1: 'Test performed by', col2: 'Investigators', hod: 'HoD' };
+let NAMES = { general: [], testPerformedBy: [], hod: [] };
+let selectedAddress = null; // { addressId, address }
+let configLoaded = false;
+
+/* =========================================================================
+   Small utilities
+   ========================================================================= */
+function debounce(fn, ms){
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function escapeHtml(str){
+  // Uses \u003c / \u003e instead of literal < > characters in this source —
+  // literal angle brackets here have been known to get mangled into the text
+  // "&lt;"/"&gt;" if this file is ever copied from a rendered HTML view
+  // instead of raw/plain text, which breaks this regex silently.
+  var lt = '\u003c', gt = '\u003e';
+  var map = { '&': '&amp;', '"': '&quot;', "'": '&#39;' };
+  map[lt] = '&lt;';
+  map[gt] = '&gt;';
+  var pattern = new RegExp('[&' + lt + gt + '"\']', 'g');
+  return String(str).replace(pattern, function(c){ return map[c]; });
+}
+
+function fmtDate(isoStr){
+  if (!isoStr) return null;
+  const [y, m, d] = isoStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function orNotSpecified(val){
+  return (val && val.toString().trim()) ? val.toString().trim() : 'Not Specified';
+}
+
+function normalizeDateStr(v){
+  if (v === null || v === undefined) return null;
+  const s = v.toString().trim();
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // already ISO
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/); // DD/MM/YYYY or DD-MM-YYYY
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  return null; // unrecognized — caller should flag it and leave the field untouched
+}
+
+function fallbackCopy(text, onDone){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    onDone();
+  } catch (e) {
+    alert('Could not copy automatically. Here is the text to copy manually:\n\n' + text);
+  }
+  document.body.removeChild(ta);
+}
+
+function copyToClipboard(text, onDone){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onDone).catch(() => fallbackCopy(text, onDone));
+  } else {
+    fallbackCopy(text, onDone);
+  }
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function sanitizeForFilename(s){
+  return (s || '').replace(/[\\/:*?"<>|]/g, '_');
+}
+
+/* =========================================================================
+   Report number & date
+   ========================================================================= */
+function populateMonthYear(){
+  const monthSel = document.getElementById('reportMonth');
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const today = new Date();
+  monthNames.forEach((name, idx) => {
+    const opt = document.createElement('option');
+    opt.value = String(idx + 1).padStart(2, '0');
+    opt.textContent = `${opt.value} — ${name}`;
+    monthSel.appendChild(opt);
+  });
+  monthSel.value = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('reportYear').value = today.getFullYear();
+  document.getElementById('reportDate').value = today.toISOString().slice(0, 10);
+}
+
+function composedReportNumber(){
+  const numRaw = document.getElementById('reportNum').value.trim();
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value.trim();
+  const prefix = CONFIG.ReportPrefix || '';
+  const numPadded = numRaw.padStart(3, '0').slice(-3);
+  return `${prefix}${numPadded}${month}${year}`;
+}
+
+function updateReportNumberPreview(){
+  const numRaw = document.getElementById('reportNum').value.trim();
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value.trim();
+  const preview = document.getElementById('reportNumPreview');
+  if (!preview) return;
+  if (!numRaw || !month || !year || year.length !== 4) {
+    preview.textContent = '—';
+    return;
+  }
+  preview.textContent = composedReportNumber();
+}
+
+/* =========================================================================
+   Config/Names/last-submitted/count — one combined ?action=init request
+   ========================================================================= */
+async function loadConfig(){
+  const statusEl = document.getElementById('configStatus');
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    statusEl.textContent = 'Apps Script URL not set. Edit APPS_SCRIPT_URL near the top of this file. Using built-in defaults for now.';
+    statusEl.classList.add('bad');
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+    return;
+  }
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=init&type=${encodeURIComponent(REPORT_TYPE)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Unknown error loading init data');
+
+    CONFIG = Object.assign({}, CONFIG, data.config);
+    NAMES = {
+      general: (data.names && data.names.general) || [],
+      testPerformedBy: (data.names && data.names.testPerformedBy) || [],
+      hod: (data.names && data.names.hod) || []
+    };
+    configLoaded = true;
+
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+    updateReportNumberPreview();
+    renderLastSubmittedInfo(data.lastReport);
+    renderFooterReportCount(data.reportCount);
+
+    statusEl.textContent = `Configuration loaded. Prefix "${CONFIG.ReportPrefix}". Names: ${NAMES.general.length} general, ${NAMES.testPerformedBy.length} test-performed-by, ${NAMES.hod.length} HoD.`;
+    statusEl.classList.remove('bad');
+  } catch (err) {
+    statusEl.textContent = `Could not reach Apps Script backend (${err.message}). Using built-in defaults — you can still generate a report, but check the prefix/role labels are correct before relying on them.`;
+    statusEl.classList.add('bad');
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+  }
+}
+
+function renderLastSubmittedInfo(lastReport){
+  const el = document.getElementById('lastSubmittedInfo');
+  if (!el) return;
+  if (!lastReport || !lastReport.reportNo) {
+    el.textContent = `No ${REPORT_TYPE} reports submitted yet.`;
+    return;
+  }
+  el.textContent = `Last submitted (${REPORT_TYPE}) — Page No: ${lastReport.pageNumber || '—'} · Report No: ${lastReport.reportNo} · Investigator 1: ${lastReport.investigator1 || '—'}`;
+}
+
+function renderFooterReportCount(count){
+  const el = document.getElementById('footerReportCount');
+  if (!el) return;
+  if (count === undefined || count === null) {
+    el.textContent = '';
+    return;
+  }
+  el.textContent = `${count} report${count === 1 ? '' : 's'} generated so far (all test types).`;
+}
+
+/* =========================================================================
+   Signatories — 3 columns: "Test performed by" and "Investigators" each
+   support multiple names (use "+ Add name" / the "✕" button); HoD is a
+   single name. Names for each column come from the Names pools loaded
+   from Config. Column labels are fixed via SIG_LABELS (not read from the
+   remote Config sheet — see note above CONFIG).
+   ========================================================================= */
+let sigNameCounts = { 1: 2, 2: 2 }; // picker rows currently shown for col 1 / col 2 (HoD is always exactly 1)
+
+function namesForCol(col){
+  if (col === 1) return NAMES.testPerformedBy;
+  if (col === 'hod') return NAMES.hod;
+  return NAMES.general; // col 2 (Investigators) shares the general Name pool
+}
+
+function sigFieldIds(col, idx){
+  if (col === 'hod') return { sel: 'sigSelectHod', wrap: 'sigOtherWrapHod', other: 'sigOtherHod' };
+  return { sel: `sigSelect${col}_${idx}`, wrap: `sigOtherWrap${col}_${idx}`, other: `sigOther${col}_${idx}` };
+}
+
+function sigPickerHtml(col, idx, sourceNames){
+  const ids = sigFieldIds(col, idx);
+  const showRemove = (col !== 'hod') && idx > 0;
+  return `
+    <div class="sig-name-row">
+      <div class="field">
+        <select id="${ids.sel}">
+          <option value="">-- Select --</option>
+          ${sourceNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
+          <option value="__other__">Other (type manually)</option>
+        </select>
+      </div>
+      <div class="field other-name" id="${ids.wrap}" style="display:none;">
+        <input type="text" id="${ids.other}" placeholder="Type name">
+      </div>
+      ${showRemove ? `<button type="button" class="remove-name-btn" data-col="${col}" data-idx="${idx}" title="Remove this name">✕</button>` : ''}
+    </div>
+  `;
+}
+
+function wireSigPicker(col, idx){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select) return;
+  select.addEventListener('change', (e) => {
+    document.getElementById(ids.wrap).style.display = (e.target.value === '__other__') ? 'flex' : 'none';
+  });
+}
+
+function readSigPickerValue(col, idx){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select) return '';
+  if (select.value === '__other__') {
+    const other = document.getElementById(ids.other);
+    return other ? other.value.trim() : '';
+  }
+  return select.value.trim();
+}
+
+function setSigPickerValue(col, idx, value){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select || !value) return;
+  const hasOption = Array.from(select.options).some(o => o.value === value);
+  const wrap = document.getElementById(ids.wrap);
+  if (hasOption) {
+    select.value = value;
+    if (wrap) wrap.style.display = 'none';
+  } else {
+    select.value = '__other__';
+    if (wrap) wrap.style.display = 'flex';
+    const other = document.getElementById(ids.other);
+    if (other) other.value = value;
+  }
+}
+
+function captureSigValues(){
+  const col1 = [];
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) col1.push(readSigPickerValue(1, idx));
+  const col2 = [];
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) col2.push(readSigPickerValue(2, idx));
+  return { col1, col2, hod: readSigPickerValue('hod', 0) };
+}
+
+function renderSignatoryFields(prevValues){
+  const container = document.getElementById('signatoryFields');
+  if (!container) return;
+  const label1 = SIG_LABELS.col1;
+  const label2 = SIG_LABELS.col2;
+  const label3 = SIG_LABELS.hod;
+
+  let col1Rows = '';
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) col1Rows += sigPickerHtml(1, idx, namesForCol(1));
+  let col2Rows = '';
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) col2Rows += sigPickerHtml(2, idx, namesForCol(2));
+  const hodRow = sigPickerHtml('hod', 0, namesForCol('hod'));
+
+  container.innerHTML = `
+    <div class="sig-cols">
+      <div class="sig-col">
+        <label>${escapeHtml(label1)} *</label>
+        <div id="sigRows1">${col1Rows}</div>
+        <button type="button" class="add-name-btn" data-col="1">+ Add name</button>
+      </div>
+      <div class="sig-col">
+        <label>${escapeHtml(label2)}</label>
+        <div id="sigRows2">${col2Rows}</div>
+        <button type="button" class="add-name-btn" data-col="2">+ Add name</button>
+      </div>
+      <div class="sig-col">
+        <label>${escapeHtml(label3)}</label>
+        <div id="sigRowsHod">${hodRow}</div>
+      </div>
+    </div>
+  `;
+
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) wireSigPicker(1, idx);
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) wireSigPicker(2, idx);
+  wireSigPicker('hod', 0);
+
+  container.querySelectorAll('.add-name-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = Number(btn.getAttribute('data-col'));
+      const vals = captureSigValues();
+      sigNameCounts[col]++;
+      renderSignatoryFields(vals);
+    });
+  });
+  container.querySelectorAll('.remove-name-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = Number(btn.getAttribute('data-col'));
+      const idx = Number(btn.getAttribute('data-idx'));
+      const vals = captureSigValues();
+      (col === 1 ? vals.col1 : vals.col2).splice(idx, 1);
+      sigNameCounts[col]--;
+      renderSignatoryFields(vals);
+    });
+  });
+
+  if (prevValues) {
+    prevValues.col1.forEach((v, idx) => setSigPickerValue(1, idx, v));
+    prevValues.col2.forEach((v, idx) => setSigPickerValue(2, idx, v));
+    setSigPickerValue('hod', 0, prevValues.hod);
+  } else {
+    // auto-fill when a pool has exactly one name
+    if (namesForCol(1).length === 1) setSigPickerValue(1, 0, namesForCol(1)[0]);
+    if (namesForCol('hod').length === 1) setSigPickerValue('hod', 0, namesForCol('hod')[0]);
+  }
+}
+
+function getSignatories(){
+  // [{ role, names: [...] }], only columns with at least one filled name — used for the docx signatory table.
+  const result = [];
+  const col1Names = [];
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) { const v = readSigPickerValue(1, idx); if (v) col1Names.push(v); }
+  if (col1Names.length) result.push({ role: SIG_LABELS.col1, names: col1Names });
+
+  const col2Names = [];
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) { const v = readSigPickerValue(2, idx); if (v) col2Names.push(v); }
+  if (col2Names.length) result.push({ role: SIG_LABELS.col2, names: col2Names });
+
+  const hodName = readSigPickerValue('hod', 0);
+  if (hodName) result.push({ role: SIG_LABELS.hod, names: [hodName] });
+
+  return result;
+}
+
+function getSignatoryNamesBySlot(){
+  // { testPerformedBy: [...], investigators: [...], hod: name or '' } — used for
+  // ReportLog columns (name only, no role) and snapshots.
+  const vals = captureSigValues();
+  return {
+    testPerformedBy: vals.col1.filter(Boolean),
+    investigators: vals.col2.filter(Boolean),
+    hod: vals.hod
+  };
+}
+
+/* =========================================================================
+   Address widget
+   ========================================================================= */
+async function onAddressSearch(){
+  const q = document.getElementById('addressSearch').value.trim();
+  const resultsEl = document.getElementById('addressResults');
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    resultsEl.innerHTML = '<div class="addr-option">Apps Script URL not configured.</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=search&q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Search failed');
+    renderAddressResults(data.results);
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="addr-option">Search error: ${escapeHtml(err.message)}</div>`;
+    resultsEl.style.display = 'block';
+  }
+}
+
+function renderAddressResults(results){
+  const resultsEl = document.getElementById('addressResults');
+  if (!results.length) {
+    resultsEl.innerHTML = '<div class="addr-option">No matches. Try "+ Add new address" below.</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+  resultsEl.innerHTML = results.map(r => `
+    <div class="addr-option" data-id="${escapeHtml(r.addressId)}" data-address="${escapeHtml(r.address)}">
+      <span class="id">${escapeHtml(r.addressId)}</span>${escapeHtml(r.address)}
+    </div>
+  `).join('');
+  resultsEl.style.display = 'block';
+  resultsEl.querySelectorAll('.addr-option[data-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      selectAddress({ addressId: el.getAttribute('data-id'), address: el.getAttribute('data-address') });
+      resultsEl.style.display = 'none';
+    });
+  });
+}
+
+function selectAddress(addr){
+  selectedAddress = addr;
+  document.getElementById('addressSearch').value = '';
+  const box = document.getElementById('selectedAddress');
+  box.style.display = 'block';
+  box.innerHTML = `<button type="button" onclick="clearSelectedAddress()">✕ change</button>${escapeHtml(addr.address)}`;
+}
+
+function clearSelectedAddress(){
+  selectedAddress = null;
+  document.getElementById('selectedAddress').style.display = 'none';
+}
+window.clearSelectedAddress = clearSelectedAddress;
+
+async function onSaveNewAddress(){
+  const text = document.getElementById('newAddressText').value.trim();
+  const shortId = document.getElementById('newAddressShort').value.trim();
+  if (!text) { alert('Enter an address first.'); return; }
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    alert('Apps Script URL not configured — cannot save to the sheet.');
+    return;
+  }
+  const btn = document.getElementById('saveAddressBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=addAddress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight
+      body: JSON.stringify({ address: text, addressId: shortId })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Save failed');
+    selectAddress({ addressId: data.addressId, address: data.address });
+    document.getElementById('addAddressForm').style.display = 'none';
+    document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
+  } catch (err) {
+    alert(`Could not save address: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save & use';
+  }
+}
+
+/* =========================================================================
+   Advanced section toggle (hidden by default on every page)
+   ========================================================================= */
+function toggleAdvancedSection(){
+  const section = document.getElementById('advancedSection');
+  const btn = document.getElementById('advancedToggleBtn');
+  const isHidden = section.style.display === 'none';
+  section.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '\u2212 Advanced' : '+ Advanced';
+}
+
+/* =========================================================================
+   Generic specimen-table controller — used across cube/brick/paving pages
+   for any row-based specimen table (Compressive, Water Absorption, etc.)
+   ========================================================================= */
+function createSpecimenTable(opts){
+  const min = opts.min || 1;
+  const max = opts.max || 20;
+  const body = document.getElementById(opts.bodyId);
+  const addBtn = opts.addBtnId ? document.getElementById(opts.addBtnId) : null;
+  const hintEl = opts.countHintId ? document.getElementById(opts.countHintId) : null;
+
+  function renumber(){
+    Array.from(body.querySelectorAll('tr')).forEach((row, i) => {
+      const slno = row.querySelector('.slno');
+      if (slno) slno.textContent = i + 1;
+    });
+  }
+
+  function updateControls(){
+    const count = body.querySelectorAll('tr').length;
+    if (addBtn) addBtn.disabled = count >= max;
+    if (hintEl) hintEl.textContent = `${count} row${count === 1 ? '' : 's'} (min ${min}, max ${max})`;
+    body.querySelectorAll('.remove-specimen-btn').forEach(btn => { btn.disabled = count <= min; });
+  }
+
+  function makeRow(rowNumber){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="slno"></td>${opts.buildRowCells(rowNumber)}<td><button type="button" class="secondary remove-specimen-btn" title="Remove row">\u2715</button></td>`;
+    tr.querySelector('.remove-specimen-btn').addEventListener('click', () => removeRow(tr));
+    return tr;
+  }
+
+  function addRow(){
+    const count = body.querySelectorAll('tr').length;
+    if (count >= max) return;
+    body.appendChild(makeRow(count + 1));
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function removeRow(tr){
+    const count = body.querySelectorAll('tr').length;
+    if (count <= min) return;
+    tr.remove();
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function setCount(n){
+    const clamped = Math.max(min, Math.min(max, n));
+    while (body.querySelectorAll('tr').length < clamped) addRow();
+    while (body.querySelectorAll('tr').length > clamped) {
+      const rows = body.querySelectorAll('tr');
+      removeRow(rows[rows.length - 1]);
+    }
+    return clamped;
+  }
+
+  function rebuild(initialCount){
+    body.innerHTML = '';
+    const n = initialCount || min;
+    for (let i = 0; i < n; i++) body.appendChild(makeRow(i + 1));
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function rows(){ return Array.from(body.querySelectorAll('tr')); }
+
+  if (addBtn) addBtn.addEventListener('click', addRow);
+
+  return { addRow, removeRow, setCount, rebuild, rows, renumber, updateControls };
+}
+
+/* =========================================================================
+   Form snapshot — common fields. Pages implement collectPageSnapshot() /
+   applyPageSnapshot(snapshot) for whatever's specific to that report type.
+   ========================================================================= */
+function collectFormSnapshot(){
+  const common = {
+    reportNum: document.getElementById('reportNum').value,
+    reportMonth: document.getElementById('reportMonth').value,
+    reportYear: document.getElementById('reportYear').value,
+    reportDate: document.getElementById('reportDate').value,
+    pageNumber: document.getElementById('pageNumber').value,
+    selectedAddress: selectedAddress ? { addressId: selectedAddress.addressId, address: selectedAddress.address } : null,
+    signatories: getSignatoryNamesBySlot()
+  };
+  const pageSpecific = (typeof collectPageSnapshot === 'function') ? collectPageSnapshot() : {};
+  return Object.assign({}, common, pageSpecific);
+}
+
+function applyFormSnapshot(snapshot){
+  if (!snapshot) return;
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+
+  setVal('reportNum', snapshot.reportNum);
+  setVal('reportMonth', snapshot.reportMonth);
+  setVal('reportYear', snapshot.reportYear);
+  setVal('reportDate', snapshot.reportDate);
+  setVal('pageNumber', snapshot.pageNumber);
+  updateReportNumberPreview();
+
+  if (snapshot.selectedAddress) {
+    selectAddress(snapshot.selectedAddress); // stored verbatim, independent of later Addresses-sheet edits
+  }
+
+  if (snapshot.signatories) {
+    const s = snapshot.signatories;
+    let col1, col2, hod;
+    if (s.testPerformedBy || s.investigators || s.hod) {
+      // current (3-column) format
+      col1 = s.testPerformedBy || [];
+      col2 = s.investigators || [];
+      hod = s.hod || '';
+    } else {
+      // legacy format saved before the 3-column layout
+      // (slot1: Test performed by, slot2/slot3: Investigator 1/2, slot4: HoD)
+      col1 = s.slot1 ? [s.slot1] : [];
+      col2 = [s.slot2, s.slot3].filter(Boolean);
+      hod = s.slot4 || '';
+    }
+    sigNameCounts[1] = Math.max(col1.length, 1);
+    sigNameCounts[2] = Math.max(col2.length, 1);
+    renderSignatoryFields({ col1: col1.length ? col1 : [''], col2: col2.length ? col2 : [''], hod });
+  }
+
+  if (typeof applyPageSnapshot === 'function') applyPageSnapshot(snapshot);
+}
+
+/* =========================================================================
+   Load a Previous Report (search + apply), filtered to this page's REPORT_TYPE
+   ========================================================================= */
+function onBackupSearch(){
+  const q = document.getElementById('backupSearchInput').value.trim();
+  const resultsEl = document.getElementById('backupResults');
+  const statusEl = document.getElementById('backupApplyStatus');
+  statusEl.textContent = '';
+  statusEl.classList.remove('error');
+  if (!q) {
+    resultsEl.innerHTML = '';
+    statusEl.textContent = 'Type a report number or page number to search.';
+    return;
+  }
+  resultsEl.innerHTML = '<div class="hint">Searching…</div>';
+  fetch(`${APPS_SCRIPT_URL}?action=searchLog&q=${encodeURIComponent(q)}&type=${encodeURIComponent(REPORT_TYPE)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) throw new Error(data.error || 'Search failed');
+      renderBackupResults(data.results);
+    })
+    .catch(err => {
+      resultsEl.innerHTML = '';
+      statusEl.textContent = `Search error: ${err.message}`;
+      statusEl.classList.add('error');
+    });
+}
+
+function renderBackupResults(results){
+  const resultsEl = document.getElementById('backupResults');
+  if (!results.length) {
+    resultsEl.innerHTML = `<div class="hint">No matching ${REPORT_TYPE} reports found.</div>`;
+    return;
+  }
+  resultsEl.innerHTML = results.map(r => `
+    <div class="backup-result" data-reportno="${escapeHtml(r.reportNo)}">
+      <strong>${escapeHtml(r.reportNo)}</strong> — Page ${escapeHtml(r.pageNumber || '—')} — ${escapeHtml(r.date || '—')}
+    </div>
+  `).join('');
+  resultsEl.querySelectorAll('.backup-result').forEach(el => {
+    el.addEventListener('click', () => onLoadBackup(el.getAttribute('data-reportno')));
+  });
+}
+
+function onLoadBackup(reportNo){
+  const statusEl = document.getElementById('backupApplyStatus');
+  statusEl.textContent = 'Loading…';
+  statusEl.classList.remove('error');
+  fetch(`${APPS_SCRIPT_URL}?action=getBackup&reportNo=${encodeURIComponent(reportNo)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) throw new Error(data.error || 'Load failed');
+      if (!data.formDataJSON) throw new Error('No saved form data for this report (it may predate this feature).');
+      const snapshot = JSON.parse(data.formDataJSON);
+      applyFormSnapshot(snapshot);
+      statusEl.textContent = `Loaded ${reportNo} into the form. Review everything before regenerating.`;
+    })
+    .catch(err => {
+      statusEl.textContent = `Could not load: ${err.message}`;
+      statusEl.classList.add('error');
+    });
+}
+
+/* =========================================================================
+   Reset ("Start New Report") — common fields; pages implement
+   resetPageSpecificFields() for the rest.
+   ========================================================================= */
+function resetForm(){
+  const today = new Date();
+  document.getElementById('reportNum').value = '';
+  document.getElementById('reportMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('reportYear').value = today.getFullYear();
+  document.getElementById('reportDate').value = today.toISOString().slice(0, 10);
+  document.getElementById('pageNumber').value = '';
+  updateReportNumberPreview();
+
+  clearSelectedAddress();
+  document.getElementById('addressSearch').value = '';
+  document.getElementById('addressResults').style.display = 'none';
+  document.getElementById('addAddressForm').style.display = 'none';
+  document.getElementById('newAddressText').value = '';
+  document.getElementById('newAddressShort').value = '';
+
+  renderSignatoryFields(); // re-applies auto-fill for any single-name slots
+
+  const clearIfPresent = (id) => { const el = document.getElementById(id); if (el) el.value = ''; };
+  clearIfPresent('backupSearchInput');
+  const backupResults = document.getElementById('backupResults');
+  if (backupResults) backupResults.innerHTML = '';
+  const backupStatus = document.getElementById('backupApplyStatus');
+  if (backupStatus) backupStatus.textContent = '';
+
+  document.getElementById('statusMsg').className = '';
+  document.getElementById('statusMsg').textContent = '';
+  const newReportBtn = document.getElementById('newReportBtn');
+  if (newReportBtn) newReportBtn.style.display = 'none';
+
+  if (typeof resetPageSpecificFields === 'function') resetPageSpecificFields();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* =========================================================================
+   Generate + log — pages implement validateForm(), buildDocx(), and
+   getAvgStrengthForLog(); everything else here is generic.
+   ========================================================================= */
+async function onGenerate(){
+  const statusEl = document.getElementById('statusMsg');
+  statusEl.className = '';
+  statusEl.textContent = '';
+
+  const errors = (typeof validateForm === 'function') ? validateForm() : [];
+  if (typeof docx === 'undefined' || !docx.Packer) {
+    errors.push('The docx library failed to load from the CDN — check your internet connection, or that cdn.jsdelivr.net isn\'t blocked, then reload the page.');
+  }
+  if (errors.length) {
+    statusEl.className = 'error';
+    statusEl.innerHTML = errors.map(e => `\u2022 ${escapeHtml(e)}`).join('<br>');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const blob = await buildDocx();
+    const reportNo = sanitizeForFilename(composedReportNumber());
+    const pageNum = sanitizeForFilename(document.getElementById('pageNumber').value.trim());
+    const filenameStem = pageNum ? `${pageNum}_${reportNo}` : reportNo;
+    downloadBlob(blob, `${filenameStem}.docx`);
+    statusEl.className = 'ok';
+    statusEl.textContent = 'Report generated and downloaded.';
+    const newReportBtn = document.getElementById('newReportBtn');
+    if (newReportBtn) newReportBtn.style.display = 'inline-block';
+
+    const sigForDisplay = getSignatoryNamesBySlot();
+    renderLastSubmittedInfo({
+      pageNumber: document.getElementById('pageNumber').value.trim(),
+      reportNo: composedReportNumber(),
+      investigator1: sigForDisplay.investigators[0] || ''
+    });
+    logReportToSheet(); // best-effort; never blocks or reverts the download above
+  } catch (err) {
+    statusEl.className = 'error';
+    statusEl.textContent = `Failed to generate report: ${err.message}`;
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Report (.docx)';
+  }
+}
+
+async function logReportToSheet(){
+  const statusEl = document.getElementById('statusMsg');
+  try {
+    const sig = getSignatoryNamesBySlot();
+    const avgStrength = (typeof getAvgStrengthForLog === 'function') ? getAvgStrengthForLog() : '';
+    const payload = {
+      testType: REPORT_TYPE,
+      pageNumber: document.getElementById('pageNumber').value.trim(),
+      reportNo: composedReportNumber(),
+      date: fmtDate(document.getElementById('reportDate').value),
+      addresseeId: selectedAddress ? selectedAddress.addressId : '',
+      avgStrength: (avgStrength !== null && avgStrength !== undefined && avgStrength !== '' && !isNaN(avgStrength)) ? Number(Number(avgStrength).toFixed(2)) : '',
+      testPerformedBy: sig.testPerformedBy.join(', '),
+      investigator1: sig.investigators[0] || '',
+      investigator2: sig.investigators.slice(1).join(', '),
+      hod: sig.hod,
+      formDataJSON: JSON.stringify(collectFormSnapshot())
+    };
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=logReport`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Log failed');
+  } catch (err) {
+    statusEl.textContent += ` (Note: could not log this report to the sheet: ${err.message})`;
+  }
+}
+
+/* =========================================================================
+   Wiring shared by both pages — call from each page's own wireEvents()
+   ========================================================================= */
+function wireCommonEvents(){
+  document.getElementById('reportNum').addEventListener('input', updateReportNumberPreview);
+  document.getElementById('reportMonth').addEventListener('change', updateReportNumberPreview);
+  document.getElementById('reportYear').addEventListener('input', updateReportNumberPreview);
+
+  document.getElementById('addressSearch').addEventListener('input', debounce(onAddressSearch, 300));
+  document.getElementById('showAddAddressBtn').addEventListener('click', () => {
+    document.getElementById('addAddressForm').style.display = 'block';
+  });
+  document.getElementById('cancelAddAddressBtn').addEventListener('click', () => {
+    document.getElementById('addAddressForm').style.display = 'none';
+    document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
+  });
+  document.getElementById('saveAddressBtn').addEventListener('click', onSaveNewAddress);
+
+  const advancedToggleBtn = document.getElementById('advancedToggleBtn');
+  if (advancedToggleBtn) advancedToggleBtn.addEventListener('click', toggleAdvancedSection);
+
+  const backupSearchBtn = document.getElementById('backupSearchBtn');
+  if (backupSearchBtn) backupSearchBtn.addEventListener('click', onBackupSearch);
+  const backupSearchInput = document.getElementById('backupSearchInput');
+  if (backupSearchInput) {
+    backupSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); onBackupSearch(); }
+    });
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', onGenerate);
+  const newReportBtn = document.getElementById('newReportBtn');
+  if (newReportBtn) newReportBtn.addEventListener('click', resetForm);
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#addressSearchWrap')) {
+      document.getElementById('addressResults').style.display = 'none';
+    }
+  });
+}
+
+
+/* =========================================================================
+   Paving-block-specific: compressive & absorption tables, plus the
+   custom abrasion specimen-block system (not a simple row table)
+   ========================================================================= */
+let compressiveTable, absorptionTable;
+
+// IS 15658:2021 Table 5 (same values as the 2006 edition) — Correction Factors for Thickness and Arris/Chamfer
+// of Paver Block, for Calculation of Compressive Strength. Transcribed
+// directly from the standard (verified against an independent source citing
+// 60mm chamfered = 1.06). "For other thickness of paver blocks between 50 mm
+// and 120 mm, linear extrapolation of concrete factor shall be made" — the
+// standard's own wording, though what's actually needed for in-between
+// values is linear interpolation between the two nearest tabulated points,
+// which is what's implemented below.
+const CORRECTION_FACTOR_TABLE = [
+  { thickness: 50, plain: 0.96, chamfered: 1.03 },
+  { thickness: 60, plain: 1.00, chamfered: 1.06 },
+  { thickness: 80, plain: 1.12, chamfered: 1.18 },
+  { thickness: 100, plain: 1.18, chamfered: 1.24 },
+  { thickness: 120, plain: 1.28, chamfered: 1.34 }
+];
+
+function lookupCorrectionFactor(thickness, arris){
+  if (isNaN(thickness) || (arris !== 'plain' && arris !== 'chamfered')) return NaN;
+  if (thickness < 50 || thickness > 120) return NaN; // outside the table's stated range
+  const exact = CORRECTION_FACTOR_TABLE.find(r => r.thickness === thickness);
+  if (exact) return exact[arris];
+  for (let i = 0; i < CORRECTION_FACTOR_TABLE.length - 1; i++) {
+    const lo = CORRECTION_FACTOR_TABLE[i], hi = CORRECTION_FACTOR_TABLE[i + 1];
+    if (thickness > lo.thickness && thickness < hi.thickness) {
+      const frac = (thickness - lo.thickness) / (hi.thickness - lo.thickness);
+      return lo[arris] + frac * (hi[arris] - lo[arris]);
+    }
+  }
+  return NaN;
+}
+
+function updateCorrectionFactorDisplay(){
+  const thickness = parseFloat(document.getElementById('paverThickness').value);
+  const arris = document.getElementById('paverArris').value;
+  const factor = lookupCorrectionFactor(thickness, arris);
+  const el = document.getElementById('correctionFactorDisplay');
+  if (isNaN(factor)) {
+    el.textContent = (thickness < 50 || thickness > 120) && !isNaN(thickness)
+      ? 'Out of table range — use manual override'
+      : '—';
+  } else {
+    el.textContent = factor.toFixed(3);
+  }
+}
+
+// The value actually used everywhere else — either the Table 5 lookup, or
+// the manual override if the user has switched that on.
+function getEffectiveCorrectionFactor(){
+  const manualOn = document.getElementById('correctionFactorManualToggle').checked;
+  if (manualOn) {
+    return parseFloat(document.getElementById('correctionFactorManual').value);
+  }
+  const thickness = parseFloat(document.getElementById('paverThickness').value);
+  const arris = document.getElementById('paverArris').value;
+  return lookupCorrectionFactor(thickness, arris);
+}
+
+function buildCompressiveRowCells(){
+  return `
+    <td class="water-col"><input type="number" step="any" class="wSub"></td>
+    <td class="water-col"><input type="number" step="any" class="wSsd"></td>
+    <td class="water-col"><input type="number" step="any" class="thk"></td>
+    <td><input type="number" step="any" class="area"></td>
+    <td><input type="number" step="any" class="weight"></td>
+    <td><input type="number" step="any" class="maxLoad"></td>
+    <td class="calc apparent">—</td>
+    <td class="calc corrected">—</td>
+    <td class="calc average">—</td>
+  `;
+}
+function buildAbsorptionRowCells(){
+  return `
+    <td><input type="number" step="any" class="dryWeight"></td>
+    <td><input type="number" step="any" class="wetWeight"></td>
+    <td class="calc absorption">—</td>
+    <td class="calc mean">—</td>
+  `;
+}
+
+/* ---- Plan area of shaped (zig-zag / interlocking) blocks — IS 15658:2021 B-3.3 ----
+   Rectangular: plan area = L × W, entered directly.
+   Water (Method 1, per block): volume = SSD weight − weight in water (g ≈ cm³),
+     plan area = volume ÷ mean thickness.
+   Cardboard (Method 2, one trace): Asp = 20 000 × m_sp / m_std mm². */
+function getPlanAreaMode(){
+  if (document.getElementById('blockShape').value !== 'shaped') return 'rect';
+  return document.getElementById('planAreaMethod').value; // water | cardboard | direct
+}
+
+function getCardboardAreaCm2(){
+  const msp = parseFloat(document.getElementById('cbBlockMass').value);
+  const mstd = parseFloat(document.getElementById('cbRectMass').value);
+  return (msp > 0 && mstd > 0) ? (20000 * msp / mstd) / 100 : NaN;
+}
+
+function waterAreaCm2(row){
+  const sub = parseFloat(row.querySelector('.wSub').value);
+  const ssd = parseFloat(row.querySelector('.wSsd').value);
+  const thk = parseFloat(row.querySelector('.thk').value);
+  return (ssd > sub && thk > 0) ? (ssd - sub) / (thk / 10) : NaN; // cm³ ÷ cm
+}
+
+// Writes the computed plan area into each row's Area box (read-only) for the
+// water and cardboard methods; leaves it editable otherwise.
+function applyPlanAreaToRows(){
+  if (!compressiveTable) return;
+  const mode = getPlanAreaMode();
+  const cbArea = getCardboardAreaCm2();
+  compressiveTable.rows().forEach(row => {
+    const input = row.querySelector('.area');
+    if (mode === 'water' || mode === 'cardboard') {
+      const a = mode === 'water' ? waterAreaCm2(row) : cbArea;
+      input.value = isNaN(a) ? '' : Math.round(a * 10) / 10;
+      input.readOnly = true;
+      input.classList.add('computed');
+    } else {
+      input.readOnly = false;
+      input.classList.remove('computed');
+    }
+  });
+}
+
+function updatePlanAreaUI(){
+  const mode = getPlanAreaMode();
+  document.getElementById('planAreaMethodField').style.display = mode === 'rect' ? 'none' : 'flex';
+  document.getElementById('cardboardRow').style.display = mode === 'cardboard' ? 'flex' : 'none';
+  document.getElementById('compressiveTable').classList.toggle('hide-water', mode !== 'water');
+  const cb = getCardboardAreaCm2();
+  document.getElementById('cbAreaDisplay').textContent = isNaN(cb) ? '—' : `${Math.round(cb * 100)} mm² (${(Math.round(cb * 10) / 10).toFixed(1)} sq.cm)`;
+  const hints = {
+    rect: 'Plan area = length × width of the block, in sq.cm (e.g. 20 × 10 = 200).',
+    water: 'For each block: weigh it hanging fully submerged in water, then drain 1 min on a 10 mm mesh, wipe with a damp cloth and weigh again (saturated surface-dry). Volume in cm³ = difference in g; plan area = volume ÷ mean thickness (4 positions). The blocks are soaked 24 h before the compressive test anyway (D-4.1), so weigh them then. Arris and false grooves make this slightly smaller than the true plan area.',
+    cardboard: 'Trace one block (wearing face up) on thin uniform cardboard and cut it out; cut a 200 × 100 mm rectangle from the same sheet; weigh both. The area is applied to every block — use only when all blocks come from the same mould.',
+    direct: 'Enter each block\'s plan area in sq.cm, found by the water or cardboard method of B-3.3. Do not use overall length × width for shaped blocks — it counts the indents as solid and understates strength.'
+  };
+  document.getElementById('planAreaHint').textContent = hints[mode];
+  recalcCompressive();
+}
+
+function recalcCompressive(){
+  applyPlanAreaToRows();
+  const rows = compressiveTable.rows();
+  const factor = getEffectiveCorrectionFactor();
+  const raw = rows.map(row => ({
+    area: parseFloat(row.querySelector('.area').value),
+    load: parseFloat(row.querySelector('.maxLoad').value)
+  }));
+  const apparents = raw.map(r => (r.area > 0 && !isNaN(r.load)) ? (r.load * 10) / r.area : NaN);
+  const corrected = apparents.map(a => (!isNaN(a) && !isNaN(factor)) ? a * factor : NaN);
+  const valid = corrected.filter(c => !isNaN(c));
+  const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
+  rows.forEach((row, i) => {
+    row.querySelector('.apparent').textContent = isNaN(apparents[i]) ? '—' : apparents[i].toFixed(2);
+    row.querySelector('.corrected').textContent = isNaN(corrected[i]) ? '—' : corrected[i].toFixed(2);
+    row.querySelector('.average').textContent = isNaN(mean) ? '—' : mean.toFixed(2);
+  });
+}
+
+function recalcAbsorption(){
+  const rows = absorptionTable.rows();
+  const raw = rows.map(row => ({
+    dry: parseFloat(row.querySelector('.dryWeight').value),
+    wet: parseFloat(row.querySelector('.wetWeight').value)
+  }));
+  const absorptions = raw.map(r => (r.dry > 0 && !isNaN(r.wet)) ? ((r.wet - r.dry) / r.dry) * 100 : NaN);
+  const valid = absorptions.filter(a => !isNaN(a));
+  const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
+  rows.forEach((row, i) => {
+    row.querySelector('.absorption').textContent = isNaN(absorptions[i]) ? '—' : absorptions[i].toFixed(2);
+    row.querySelector('.mean').textContent = isNaN(mean) ? '—' : mean.toFixed(2);
+  });
+}
+
+function getCompressiveData(){
+  applyPlanAreaToRows();
+  const factor = getEffectiveCorrectionFactor();
+  return compressiveTable.rows().map(row => {
+    const area = parseFloat(row.querySelector('.area').value);
+    const weight = parseFloat(row.querySelector('.weight').value);
+    const load = parseFloat(row.querySelector('.maxLoad').value);
+    const apparent = (area > 0) ? (load * 10) / area : NaN;
+    const corrected = (!isNaN(apparent) && !isNaN(factor)) ? apparent * factor : NaN;
+    return { area, weight, load, apparent, corrected };
+  }).map((s, i, arr) => {
+    const valid = arr.map(x => x.corrected).filter(v => !isNaN(v));
+    const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
+    return { ...s, mean };
+  });
+}
+
+function getAbsorptionData(){
+  return absorptionTable.rows().map(row => {
+    const dryWeight = parseFloat(row.querySelector('.dryWeight').value);
+    const wetWeight = parseFloat(row.querySelector('.wetWeight').value);
+    const absorption = (dryWeight > 0) ? ((wetWeight - dryWeight) / dryWeight) * 100 : NaN;
+    return { dryWeight, wetWeight, absorption };
+  }).map((s, i, arr) => {
+    const valid = arr.map(x => x.absorption).filter(v => !isNaN(v));
+    const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : NaN;
+    return { ...s, mean };
+  });
+}
+
+/* ---- Abrasion: custom specimen-block system (not a simple row table) ----
+   IS 15658:2021 Annex E. Each specimen (71 mm square) is weighed before the
+   test and after every 4 cycles (E-3.1), 16 cycles in all (E-3.6).
+   ΔV = Δm / ρR (E-4), with ρR the density of THAT specimen. Individual and
+   mean values are reported to the nearest 1000 mm³ per 5000 mm² (E-5) and
+   checked against Table 3 (iii). */
+const ABRASION_CYCLES = [0, 4, 8, 12, 16];
+const MIN_ABRASION_SPECIMENS = 1;
+const MAX_ABRASION_SPECIMENS = 20;
+const DEFAULT_ABRASION_SPECIMENS = 3; // Table 4: 3 specimens per condition
+const ABRASION_EDGES = 4;
+// IS 15658:2021 Table 3 (iii), mm³ per 5000 mm², max
+const ABRASION_LIMITS = {
+  dry: { individual: 20000, average: 18000 },
+  wet: { individual: 22000, average: 20000 }
+};
+
+function getAbrasionCondition(){
+  return document.getElementById('abrasionCondition').value === 'wet' ? 'wet' : 'dry';
+}
+
+function isAbrasionSameArea(){
+  return document.getElementById('abrasionSameArea').checked;
+}
+
+function fmtIS(n){
+  // IS-style digit grouping with a space: 18000 -> "18 000"
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function buildAbrasionSpecimenHtml(){
+  const heightCells = ABRASION_CYCLES.map(c => `<td><input type="number" step="any" class="cycle-height" data-cycle="${c}"></td>`).join('');
+  const weightCells = ABRASION_CYCLES.map(c => `<td><input type="number" step="any" class="cycle-weight" data-cycle="${c}"></td>`).join('');
+  let edgeRows = '';
+  for (let e = 0; e < ABRASION_EDGES; e++) {
+    edgeRows += `<tr class="edge-row" style="display:none;"><td>Edge ${e + 1} Height (mm)</td>${
+      ABRASION_CYCLES.map(c => `<td><input type="number" step="any" class="edge-height" data-edge="${e}" data-cycle="${c}"></td>`).join('')
+    }</tr>`;
+  }
+  let edgeThk = '';
+  for (let e = 0; e < ABRASION_EDGES; e++) {
+    edgeThk += `<div class="field" style="flex:0 0 auto;"><label>Edge ${e + 1}</label><input type="number" step="any" class="edge-thickness" data-edge="${e}"></div>`;
+  }
+  return `
+    <div class="card abrasion-specimen-block" style="margin-bottom:12px;">
+      <div class="toolbar" style="justify-content:space-between;">
+        <strong class="specimen-label"></strong>
+        <label class="four-edge-label"><input type="checkbox" class="four-edge-toggle"> Four-edge readings</label>
+        <button type="button" class="secondary remove-abrasion-btn">✕ Remove specimen</button>
+      </div>
+      <div class="row">
+        <div class="field narrow spec-area-field" style="display:none;">
+          <label>Surface Area (sq.mm) *</label>
+          <input type="number" step="any" class="spec-area" placeholder="e.g. 5041">
+        </div>
+        <div class="field narrow">
+          <label>Initial Height (mm)</label>
+          <input type="number" step="any" class="spec-height" placeholder="blank = Avg Height at cycle 0">
+        </div>
+        <div class="field narrow">
+          <label>Mass for Density (g)</label>
+          <input type="number" step="any" class="spec-mass" placeholder="blank = Weight at cycle 0">
+        </div>
+        <div class="field narrow">
+          <label>Density ρR (computed)</label>
+          <div class="preview-box spec-density" style="margin-top:0;">—</div>
+        </div>
+      </div>
+      <table class="specimen abrasion-cycle-table">
+        <thead><tr><th>Cycle</th><th>0</th><th>4</th><th>8</th><th>12</th><th>16</th></tr></thead>
+        <tbody>
+          ${edgeRows}
+          <tr class="avg-row"><td>Avg Height (mm)</td>${heightCells}</tr>
+          <tr><td>Weight after Cycle (g) *</td>${weightCells}</tr>
+        </tbody>
+      </table>
+      <div class="row" style="margin-top:8px; align-items:flex-end;">
+        <div class="field narrow">
+          <label>Depth of Wear by Gauge (mm) — record only</label>
+          <input type="number" step="any" class="measured-thickness">
+        </div>
+        <div class="edge-thickness-wrap">${edgeThk}</div>
+        <div class="field narrow">
+          <label>Abrasion Loss (mm³ / 5000 mm²)</label>
+          <div class="preview-box spec-loss" style="margin-top:0;">—</div>
+        </div>
+      </div>
+      <div class="hint four-edge-hint" style="display:none;">Edge readings are kept in the form (and the saved snapshot) for checking. Where any edge value is entered, the Avg value is computed from the entered edges and only that average is printed.</div>
+      <div class="hint">Heights and depth of wear are lab records — IS 15658:2021 assesses abrasion on volume loss only, so the depth of wear is not printed on the certificate.</div>
+    </div>
+  `;
+}
+
+function meanOfFinite(values){
+  const v = values.filter(x => !isNaN(x));
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : NaN;
+}
+
+function round2(x){ return Math.round(x * 100) / 100; }
+
+// Recompute the averaged cells of one abrasion specimen from its edge readings.
+// A cycle (or the depth of wear) is only computed when at least one of its
+// edges has a value — otherwise the average cell stays directly editable.
+function recalcAbrasionBlock(block){
+  const fourEdge = block.querySelector('.four-edge-toggle').checked;
+  ABRASION_CYCLES.forEach(c => {
+    const avgInput = block.querySelector(`.cycle-height[data-cycle="${c}"]`);
+    const edges = Array.from(block.querySelectorAll(`.edge-height[data-cycle="${c}"]`)).map(i => parseFloat(i.value));
+    const m = meanOfFinite(edges);
+    if (fourEdge && !isNaN(m)) {
+      avgInput.value = round2(m);
+      avgInput.readOnly = true;
+      avgInput.classList.add('computed');
+    } else {
+      avgInput.readOnly = false;
+      avgInput.classList.remove('computed');
+    }
+  });
+  const thkInput = block.querySelector('.measured-thickness');
+  const thkEdges = Array.from(block.querySelectorAll('.edge-thickness')).map(i => parseFloat(i.value));
+  const tm = meanOfFinite(thkEdges);
+  if (fourEdge && !isNaN(tm)) {
+    thkInput.value = round2(tm);
+    thkInput.readOnly = true;
+    thkInput.classList.add('computed');
+  } else {
+    thkInput.readOnly = false;
+    thkInput.classList.remove('computed');
+  }
+}
+
+function setAbrasionFourEdge(block, on){
+  block.querySelector('.four-edge-toggle').checked = !!on;
+  block.querySelectorAll('.edge-row').forEach(r => { r.style.display = on ? '' : 'none'; });
+  block.querySelector('.edge-thickness-wrap').style.display = on ? 'flex' : 'none';
+  block.querySelector('.four-edge-hint').style.display = on ? 'block' : 'none';
+  recalcAbrasionBlock(block);
+  updateAbrasionResults();
+}
+
+function applyAbrasionSameAreaVisibility(){
+  const same = isAbrasionSameArea();
+  document.getElementById('abrasionSurfaceArea').disabled = !same;
+  getAbrasionSpecimenBlocks().forEach(b => { b.querySelector('.spec-area-field').style.display = same ? 'none' : 'flex'; });
+  updateAbrasionResults();
+}
+
+function renumberAbrasionSpecimens(){
+  const blocks = document.querySelectorAll('#abrasionSpecimensContainer .abrasion-specimen-block');
+  blocks.forEach((b, i) => { b.querySelector('.specimen-label').textContent = `Specimen ${i + 1}`; });
+  document.getElementById('abrasionCountHint').textContent = `${blocks.length} specimen${blocks.length === 1 ? '' : 's'} (IS 15658 Table 4: 3 per condition)`;
+  document.getElementById('addAbrasionSpecimenBtn').disabled = blocks.length >= MAX_ABRASION_SPECIMENS;
+  document.querySelectorAll('.remove-abrasion-btn').forEach(btn => { btn.disabled = blocks.length <= MIN_ABRASION_SPECIMENS; });
+}
+
+function addAbrasionSpecimen(){
+  const container = document.getElementById('abrasionSpecimensContainer');
+  if (container.querySelectorAll('.abrasion-specimen-block').length >= MAX_ABRASION_SPECIMENS) return;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = buildAbrasionSpecimenHtml();
+  const block = wrapper.firstElementChild;
+  block.querySelector('.remove-abrasion-btn').addEventListener('click', () => removeAbrasionSpecimen(block));
+  block.querySelector('.four-edge-toggle').addEventListener('change', (e) => setAbrasionFourEdge(block, e.target.checked));
+  block.addEventListener('input', (e) => {
+    if (e.target.classList.contains('edge-height') || e.target.classList.contains('edge-thickness')) recalcAbrasionBlock(block);
+    updateAbrasionResults();
+  });
+  block.querySelector('.spec-area-field').style.display = isAbrasionSameArea() ? 'none' : 'flex';
+  container.appendChild(block);
+  renumberAbrasionSpecimens();
+  updateAbrasionResults();
+}
+
+function removeAbrasionSpecimen(block){
+  const container = document.getElementById('abrasionSpecimensContainer');
+  if (container.querySelectorAll('.abrasion-specimen-block').length <= MIN_ABRASION_SPECIMENS) return;
+  block.remove();
+  renumberAbrasionSpecimens();
+  updateAbrasionResults();
+}
+
+function rebuildAbrasionSpecimens(count){
+  const container = document.getElementById('abrasionSpecimensContainer');
+  container.innerHTML = '';
+  const n = Math.max(MIN_ABRASION_SPECIMENS, Math.min(MAX_ABRASION_SPECIMENS, count || DEFAULT_ABRASION_SPECIMENS));
+  for (let i = 0; i < n; i++) addAbrasionSpecimen();
+}
+
+function getAbrasionSpecimenBlocks(){
+  return Array.from(document.querySelectorAll('#abrasionSpecimensContainer .abrasion-specimen-block'));
+}
+
+function roundToThousand(x){ return Math.round(x / 1000) * 1000; }
+
+// Per-specimen results plus the summary (mean, max, compliance).
+function getAbrasionData(){
+  const same = isAbrasionSameArea();
+  const globalArea = parseFloat(document.getElementById('abrasionSurfaceArea').value);
+  const specimens = getAbrasionSpecimenBlocks().map(block => {
+    const heights = ABRASION_CYCLES.map(c => parseFloat(block.querySelector(`.cycle-height[data-cycle="${c}"]`).value));
+    const weights = ABRASION_CYCLES.map(c => parseFloat(block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value));
+    const area = same ? globalArea : parseFloat(block.querySelector('.spec-area').value);
+    const heightInput = parseFloat(block.querySelector('.spec-height').value);
+    const height = !isNaN(heightInput) ? heightInput : heights[0];
+    const massInput = parseFloat(block.querySelector('.spec-mass').value);
+    const mass = !isNaN(massInput) ? massInput : weights[0];
+    const density = (area > 0 && height > 0 && mass > 0) ? mass / (area * height) : NaN; // g/mm³
+    const weightLoss = (!isNaN(weights[0]) && !isNaN(weights[weights.length - 1])) ? weights[0] - weights[weights.length - 1] : NaN;
+    const volumeLoss = (!isNaN(weightLoss) && density > 0) ? weightLoss / density : NaN; // mm³ (E-4)
+    const rawNormalized = (!isNaN(volumeLoss) && area > 0) ? volumeLoss * (5000 / area) : NaN; // mm³ per 5000 mm²
+    const normalizedLoss = !isNaN(rawNormalized) ? roundToThousand(rawNormalized) : NaN; // E-5
+    const measuredThickness = parseFloat(block.querySelector('.measured-thickness').value);
+    const fourEdge = block.querySelector('.four-edge-toggle').checked &&
+      Array.from(block.querySelectorAll('.edge-height, .edge-thickness')).some(i => i.value.trim() !== '');
+    return { area, height, mass, density, heights, weights, weightLoss, volumeLoss, rawNormalized, normalizedLoss, measuredThickness, fourEdge };
+  });
+  const condition = getAbrasionCondition();
+  const limits = ABRASION_LIMITS[condition];
+  const rawMean = meanOfFinite(specimens.map(s => s.rawNormalized));
+  const mean = !isNaN(rawMean) ? roundToThousand(rawMean) : NaN; // mean of unrounded values, rounded once
+  const validIndiv = specimens.map(s => s.normalizedLoss).filter(v => !isNaN(v));
+  const maxIndividual = validIndiv.length ? Math.max(...validIndiv) : NaN;
+  const allValid = validIndiv.length === specimens.length && specimens.length > 0;
+  const meetsAverage = !isNaN(mean) ? mean <= limits.average : null;
+  const meetsIndividual = !isNaN(maxIndividual) ? maxIndividual <= limits.individual : null;
+  return { specimens, condition, limits, mean, maxIndividual, allValid, meetsAverage, meetsIndividual };
+}
+
+function updateAbrasionResults(){
+  const container = document.getElementById('abrasionSpecimensContainer');
+  if (!container) return;
+  const data = getAbrasionData();
+  getAbrasionSpecimenBlocks().forEach((block, i) => {
+    const s = data.specimens[i];
+    block.querySelector('.spec-density').textContent = isNaN(s.density) ? '—' : `${(s.density * 1000).toFixed(3)} g/cm³`;
+    block.querySelector('.spec-loss').textContent = isNaN(s.normalizedLoss) ? '—' : fmtIS(s.normalizedLoss);
+  });
+  const el = document.getElementById('abrasionSummary');
+  if (!el) return;
+  if (isNaN(data.mean)) { el.textContent = '—'; el.className = 'prompt-scope'; return; }
+  const ok = data.meetsAverage && data.meetsIndividual;
+  el.className = ok ? 'prompt-scope' : 'prompt-scope bad';
+  el.textContent = `Mean ${fmtIS(data.mean)} (limit ${fmtIS(data.limits.average)}) · highest individual ${fmtIS(data.maxIndividual)} (limit ${fmtIS(data.limits.individual)}) mm³ per 5000 mm², ${data.condition} — ${ok ? 'within' : 'exceeds'} IS 15658:2021 Table 3 limits.`;
+}
+
+/* ---- Visual inspection & dimensions — IS 15658:2021 Cl. 7.1, 7.2, Table 2, Annex B ---- */
+let dimensionTable;
+const DEFAULT_DIMENSION_BLOCKS = 4; // Table 4: 4 (manufacturer/purchaser QA) or 8 (third-party QA)
+// Table 1 minimum thickness by grade (mm)
+const GRADE_MIN_THICKNESS = { 30: 50, 35: 60, 40: 80, 50: 100, 55: 100 };
+const ARRIS_MIN = 5, ARRIS_MAX = 7, ARRIS_TOL = 1;
+const WEAR_FACE_RATIO_MIN = 0.75, WEAR_FACE_RATIO_TOL = 0.01; // Table 2 (viii)
+
+function isShapedBlock(){
+  return document.getElementById('blockShape').value === 'shaped';
+}
+
+// Rectangular block: wearing face = plan area less the arris strip on all sides.
+function rectWearFaceRatio(l, w, a){
+  if (!(l > 0 && w > 0) || isNaN(a)) return NaN;
+  return Math.round(((l - 2 * a) * (w - 2 * a)) / (l * w) * 100) / 100;
+}
+
+// Shaped block: one cardboard tracing (B-3.3.3) — Asw/Asp = m_sw / m_sp.
+// m_sp falls back to the tracing entered for plan area in the compressive card.
+function shapedWearFaceRatio(){
+  let msp = parseFloat(document.getElementById('wfMsp').value);
+  if (isNaN(msp)) msp = parseFloat(document.getElementById('cbBlockMass').value);
+  const msw = parseFloat(document.getElementById('wfMsw').value);
+  return (msp > 0 && msw > 0) ? Math.round(msw / msp * 100) / 100 : NaN;
+}
+
+function buildDimensionRowCells(){
+  return `
+    <td><input type="number" step="any" class="dimL"></td>
+    <td><input type="number" step="any" class="dimW"></td>
+    <td><input type="number" step="any" class="dimTh"></td>
+    <td class="calc dimRatio">—</td>
+    <td><input type="number" step="any" class="dimArris"></td>
+    <td><input type="number" step="any" class="dimSq"></td>
+    <td class="calc dimWf rect-only">—</td>
+    <td class="calc dimOk">—</td>
+  `;
+}
+
+function parseNominalSize(){
+  const nums = (document.getElementById('nominalSize').value || '').match(/\d+(?:\.\d+)?/g);
+  return (nums && nums.length >= 3) ? { l: parseFloat(nums[0]), w: parseFloat(nums[1]), th: parseFloat(nums[2]) } : null;
+}
+
+// Declared values: typed in, else taken from the Nominal Size field.
+function getDeclaredDims(){
+  const nom = parseNominalSize() || {};
+  const pick = (id, fallback) => { const v = parseFloat(document.getElementById(id).value); return !isNaN(v) ? v : (fallback !== undefined ? fallback : NaN); };
+  return { l: pick('declaredLength', nom.l), w: pick('declaredWidth', nom.w), th: pick('declaredThickness', nom.th) };
+}
+
+function dimTolerances(declaredTh){
+  const thick = declaredTh >= 100;
+  return { lw: thick ? 3 : 2, th: thick ? 4 : 3, sq: thick ? 3 : 2 };
+}
+
+const round0 = x => Math.round(x);
+const round1 = x => Math.round(x * 10) / 10;
+
+function evaluateDimensionBlock(r, decl, tol){
+  const fails = [];
+  if (!isNaN(r.l) && !isNaN(decl.l) && Math.abs(round0(r.l) - decl.l) > tol.lw) fails.push('length');
+  if (!isNaN(r.w) && !isNaN(decl.w) && Math.abs(round0(r.w) - decl.w) > tol.lw) fails.push('width');
+  if (!isNaN(r.th) && !isNaN(decl.th) && Math.abs(round0(r.th) - decl.th) > tol.th) fails.push('thickness');
+  if (!isNaN(r.ratio) && r.ratio > 4) fails.push('aspect ratio');
+  if (!isNaN(r.arris) && (round1(r.arris) < ARRIS_MIN - ARRIS_TOL || round1(r.arris) > ARRIS_MAX)) fails.push('arris');
+  if (!isNaN(r.sq) && round1(r.sq) > tol.sq) fails.push('squareness');
+  if (!isNaN(r.wf) && r.wf < WEAR_FACE_RATIO_MIN - WEAR_FACE_RATIO_TOL) fails.push('wearing face ratio');
+  return fails;
+}
+
+function getDimensionData(){
+  const decl = getDeclaredDims();
+  const tol = dimTolerances(decl.th);
+  const shaped = isShapedBlock();
+  const blocks = dimensionTable.rows().map(row => {
+    const r = {
+      l: parseFloat(row.querySelector('.dimL').value),
+      w: parseFloat(row.querySelector('.dimW').value),
+      th: parseFloat(row.querySelector('.dimTh').value),
+      arris: parseFloat(row.querySelector('.dimArris').value),
+      sq: parseFloat(row.querySelector('.dimSq').value)
+    };
+    r.ratio = (r.l > 0 && r.th > 0) ? round1(round0(r.l) / round0(r.th)) : NaN;
+    r.wf = shaped ? NaN : rectWearFaceRatio(r.l, r.w, r.arris);
+    r.fails = evaluateDimensionBlock(r, decl, tol);
+    r.complete = !isNaN(r.l) && !isNaN(r.w) && !isNaN(r.th);
+    return r;
+  });
+  const mean = key => meanOfFinite(blocks.map(b => b[key]));
+  const means = { l: mean('l'), w: mean('w'), th: mean('th'), arris: mean('arris'), sq: mean('sq') };
+  means.ratio = (means.l > 0 && means.th > 0) ? round1(means.l / means.th) : NaN;
+  const defectsRaw = parseInt(document.getElementById('visualDefects').value, 10);
+  const visualDefects = isNaN(defectsRaw) ? NaN : defectsRaw;
+  means.wf = shaped ? NaN : meanOfFinite(blocks.map(b => b.wf));
+  const fck = parseGradeFck(document.getElementById('blockGrade').value);
+  const minThk = GRADE_MIN_THICKNESS[fck];
+  const wfShapedRatio = shaped ? shapedWearFaceRatio() : NaN;
+  const wfShaped = !isNaN(wfShapedRatio) ? { ratio: wfShapedRatio, ok: wfShapedRatio >= WEAR_FACE_RATIO_MIN - WEAR_FACE_RATIO_TOL } : null;
+  const failedBlocks = blocks.map((b, i) => b.fails.length ? { n: i + 1, fails: b.fails } : null).filter(Boolean);
+  return {
+    shaped, wfShaped,
+    decl, tol, blocks, means, visualDefects,
+    visualRemarks: document.getElementById('visualRemarks').value.trim(),
+    failedBlocks,
+    dimsOk: failedBlocks.length === 0 && !(wfShaped && !wfShaped.ok),
+    visualOk: !isNaN(visualDefects) ? visualDefects <= 1 : null, // Cl. 9.1.2
+    gradeMin: (minThk && !isNaN(decl.th)) ? { fck, min: minThk, ok: decl.th >= minThk } : null
+  };
+}
+
+function updateDimensionShapeUI(shaped){
+  document.getElementById('dimensionTable').classList.toggle('shaped-blocks', shaped);
+  document.getElementById('thDimL').textContent = shaped ? 'Overall Length (mm)' : 'Length (mm)';
+  document.getElementById('thDimW').textContent = shaped ? 'Overall Width (mm)' : 'Width (mm)';
+  document.getElementById('wearFaceShapedRow').style.display = shaped ? 'flex' : 'none';
+  document.getElementById('visualHint').textContent = 'Visual: in natural daylight, lay the blocks on a level floor in a paving pattern and look from about 2 m on each side for cracks, flaking and badly formed surface features (Cl. 7.1).'
+    + (shaped ? ' For zig-zag blocks also check that the teeth and corners are intact (not chipped) and that the blocks key into each other when laid in herringbone.' : '');
+  document.getElementById('dimensionHint').textContent = shaped
+    ? 'Zig-zag blocks: length and width are OVERALL — the sides of the smallest rectangle enclosing the block, excluding spacer nibs (Cl. 3.15, 3.16). Close the caliper jaws flat on the outermost tips: length at 2 positions, width at 3, across different pairs of opposite tips (nearest 1 mm). Thickness at 4 positions (nearest 1 mm). Arris width at 4 positions on straight edge segments, and squareness at 6 positions with the square on straight face segments, away from corners and nibs (nearest 0.1 mm). Wearing face ratio: on the cardboard tracing, mark the arris width with the odd-leg gauge, cut that strip off and weigh again (B-3.3.3). Table 4: 8 blocks (third-party QA) or 4 (manufacturer/purchaser QA).'
+    : 'Enter each block\'s mean value: length from 2 positions, width 3, thickness 4 (nearest 1 mm); arris width from 4 positions and squareness deviation from 6 positions (nearest 0.1 mm). Leave arris blank for plain blocks. Asw/Asp is worked out from length, width and arris width. Table 4: 8 blocks (third-party QA) or 4 (manufacturer/purchaser QA).';
+}
+
+function recalcDimensions(){
+  if (!dimensionTable) return;
+  const data = getDimensionData();
+  updateDimensionShapeUI(data.shaped);
+  document.getElementById('wfRatioDisplay').textContent = data.wfShaped ? data.wfShaped.ratio.toFixed(2) : '—';
+  dimensionTable.rows().forEach((row, i) => {
+    const b = data.blocks[i];
+    row.querySelector('.dimRatio').textContent = isNaN(b.ratio) ? '—' : b.ratio.toFixed(1);
+    row.querySelector('.dimWf').textContent = isNaN(b.wf) ? '—' : b.wf.toFixed(2);
+    const okCell = row.querySelector('.dimOk');
+    okCell.textContent = !b.complete ? '—' : (b.fails.length ? `✕ ${b.fails.join(', ')}` : '✓');
+    okCell.style.color = b.fails.length ? 'var(--danger)' : '';
+  });
+  const el = document.getElementById('dimensionSummary');
+  const d = data.decl;
+  if (isNaN(d.l) || isNaN(d.w) || isNaN(d.th)) {
+    el.className = 'prompt-scope bad';
+    el.textContent = 'Declared length / width / thickness not known — enter them above, or give a Nominal Size like "200 x 100 x 80 mm".';
+    return;
+  }
+  const parts = [`Declared ${d.l} × ${d.w} × ${d.th} mm → tolerance L/W ±${data.tol.lw}, Th ±${data.tol.th}, squareness ≤ ${data.tol.sq} mm`];
+  parts.push(data.dimsOk ? 'all blocks within Table 2' : `outside Table 2: ${data.failedBlocks.map(f => `block ${f.n} (${f.fails.join(', ')})`).join('; ')}`);
+  if (data.wfShaped) parts.push(`Asw/Asp ${data.wfShaped.ratio.toFixed(2)} (min ${WEAR_FACE_RATIO_MIN})${data.wfShaped.ok ? '' : ' — below minimum'}`);
+  if (data.visualOk === false) parts.push(`${data.visualDefects} blocks with visual defects (max 1)`);
+  if (data.gradeMin && !data.gradeMin.ok) parts.push(`declared thickness below the M ${data.gradeMin.fck} minimum of ${data.gradeMin.min} mm`);
+  el.className = (data.dimsOk && data.visualOk !== false && !(data.gradeMin && !data.gradeMin.ok)) ? 'prompt-scope' : 'prompt-scope bad';
+  el.textContent = parts.join(' · ') + '.';
+}
+
+/* =========================================================================
+   Choice of tests — show/hide the relevant specimen cards
+   ========================================================================= */
+function getSelectedTests(){
+  return {
+    compressive: document.getElementById('testCompressive').checked,
+    absorption: document.getElementById('testAbsorption').checked,
+    abrasion: document.getElementById('testAbrasion').checked,
+    dimensions: document.getElementById('testDimensions').checked
+  };
+}
+
+function updateTestCardVisibility(){
+  const sel = getSelectedTests();
+  document.getElementById('compressiveCard').style.display = sel.compressive ? 'block' : 'none';
+  document.getElementById('absorptionCard').style.display = sel.absorption ? 'block' : 'none';
+  document.getElementById('abrasionCard').style.display = sel.abrasion ? 'block' : 'none';
+  document.getElementById('dimensionCard').style.display = sel.dimensions ? 'block' : 'none';
+  updateSpecimenPromptScope();
+}
+
+// Note shown beside "Copy extraction prompt" — says exactly what the prompt
+// will ask the LLM for, based on the current test ticks.
+function updateSpecimenPromptScope(){
+  const el = document.getElementById('specimenPromptScope');
+  const btn = document.getElementById('copySpecimenPromptBtn');
+  if (!el) return;
+  const sel = getSelectedTests();
+  const incl = [], excl = [];
+  (sel.compressive ? incl : excl).push(getPlanAreaMode() === 'water'
+    ? 'Compressive Strength (weight in water, saturated surface-dry weight and thickness for plan area, plus weight and load)'
+    : 'Compressive Strength (area, weight, load)');
+  (sel.absorption ? incl : excl).push('Water Absorption (dry & wet weights)');
+  (sel.abrasion ? incl : excl).push('Abrasion Resistance (dry/wet, per-specimen surface area & initial height, weights at 0/4/8/12/16 cycles, heights and depth of wear — including four-edge readings where the log book has them)');
+  if (!incl.length) {
+    el.className = 'prompt-scope bad';
+    el.innerHTML = 'No tests ticked in section 5 — tick at least one before copying the prompt.';
+    if (btn) btn.disabled = true;
+    return;
+  }
+  el.className = 'prompt-scope';
+  el.innerHTML = `<strong>Prompt will ask for:</strong> ${incl.map(escapeHtml).join('; ')}.`
+    + (excl.length ? `<br><strong>Not included</strong> (unticked): ${excl.map(s => escapeHtml(s.split(' (')[0])).join(', ')}.` : '');
+  if (btn) btn.disabled = false;
+}
+
+/* =========================================================================
+   Init
+   ========================================================================= */
+function onConfigLoaded(){
+  if (!compressiveTable) {
+    compressiveTable = createSpecimenTable({
+      bodyId: 'compressiveBody', addBtnId: 'addCompressiveBtn', countHintId: 'compressiveCountHint',
+      min: MIN_SPECIMENS, max: MAX_SPECIMENS, buildRowCells: buildCompressiveRowCells, onChange: recalcCompressive
+    });
+    absorptionTable = createSpecimenTable({
+      bodyId: 'absorptionBody', addBtnId: 'addAbsorptionBtn', countHintId: 'absorptionCountHint',
+      min: MIN_SPECIMENS, max: MAX_SPECIMENS, buildRowCells: buildAbsorptionRowCells, onChange: recalcAbsorption
+    });
+    document.getElementById('addAbrasionSpecimenBtn').addEventListener('click', () => addAbrasionSpecimen());
+    dimensionTable = createSpecimenTable({
+      bodyId: 'dimensionBody', addBtnId: 'addDimensionBtn', countHintId: 'dimensionCountHint',
+      min: 1, max: 20, buildRowCells: buildDimensionRowCells, onChange: recalcDimensions
+    });
+  }
+  dimensionTable.rebuild(DEFAULT_DIMENSION_BLOCKS);
+  updatePlanAreaUI();
+  compressiveTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  absorptionTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  rebuildAbrasionSpecimens(DEFAULT_ABRASION_SPECIMENS); // Table 4: 3 specimens per condition
+  applyAbrasionSameAreaVisibility();
+  updateTestCardVisibility();
+}
+
+/* =========================================================================
+   Validation
+   ========================================================================= */
+function validateForm(){
+  const errors = [];
+  if (!document.getElementById('reportNum').value.trim()) errors.push('Report number is required.');
+  if (!document.getElementById('reportYear').value.trim()) errors.push('Report year is required.');
+  if (!document.getElementById('reportDate').value) errors.push('Report date is required.');
+  if (!selectedAddress) errors.push('Please select or add an addressee.');
+  // Block Grade is optional — if left blank, the docx shows "Not Specified"
+  // and NOTES estimates a grade from the mean corrected compressive strength instead.
+  if (!document.getElementById('testingDate').value) errors.push('Date of Testing is required.');
+
+  const sig1Filled = getSignatoryNamesBySlot().testPerformedBy.length > 0;
+  if (!sig1Filled) errors.push(`"${SIG_LABELS.col1}" signatory is required.`);
+
+  const sel = getSelectedTests();
+  if (!sel.compressive && !sel.absorption && !sel.abrasion && !sel.dimensions) {
+    errors.push('Select at least one test (Compressive Strength / Water Absorption / Abrasion Resistance / Visual Inspection & Dimensions).');
+  }
+
+  if (sel.compressive) {
+    const manualOn = document.getElementById('correctionFactorManualToggle').checked;
+    if (manualOn) {
+      if (isNaN(parseFloat(document.getElementById('correctionFactorManual').value))) {
+        errors.push('Manual Correction Factor is required (override is switched on).');
+      }
+    } else {
+      const thickness = parseFloat(document.getElementById('paverThickness').value);
+      const arris = document.getElementById('paverArris').value;
+      if (isNaN(thickness)) errors.push('Nominal Block Thickness is required.');
+      if (!arris) errors.push('Block Edge (Plain / Arrised-Chamfered) is required.');
+      if (!isNaN(thickness) && arris && isNaN(lookupCorrectionFactor(thickness, arris))) {
+        errors.push('Thickness is outside the IS 15658 Table 5 range (50–120mm) — switch on manual override and enter a factor.');
+      }
+    }
+    const mode = getPlanAreaMode();
+    if (mode === 'cardboard' && isNaN(getCardboardAreaCm2())) errors.push('Plan area (cardboard method): enter the mass of the block tracing and of the 200 × 100 mm rectangle.');
+    compressiveTable.rows().forEach((row, i) => {
+      if (mode === 'water') {
+        const sub = parseFloat(row.querySelector('.wSub').value), ssd = parseFloat(row.querySelector('.wSsd').value), thk = parseFloat(row.querySelector('.thk').value);
+        if (isNaN(sub) || isNaN(ssd) || isNaN(thk)) errors.push(`Compressive specimen ${i + 1}: weight in water, saturated surface-dry weight and thickness are required for the water method.`);
+        else if (ssd <= sub) errors.push(`Compressive specimen ${i + 1}: saturated surface-dry weight must be more than the weight in water.`);
+      }
+      if (mode !== 'water' && isNaN(parseFloat(row.querySelector('.area').value))) errors.push(`Compressive specimen ${i + 1}: plan area is required.`);
+      if (isNaN(parseFloat(row.querySelector('.weight').value))) errors.push(`Compressive specimen ${i + 1}: weight is required.`);
+      if (isNaN(parseFloat(row.querySelector('.maxLoad').value))) errors.push(`Compressive specimen ${i + 1}: max load is required.`);
+    });
+  }
+  if (sel.absorption) {
+    absorptionTable.rows().forEach((row, i) => {
+      if (isNaN(parseFloat(row.querySelector('.dryWeight').value))) errors.push(`Absorption specimen ${i + 1}: dry weight is required.`);
+      if (isNaN(parseFloat(row.querySelector('.wetWeight').value))) errors.push(`Absorption specimen ${i + 1}: wet weight is required.`);
+    });
+  }
+  if (sel.abrasion) {
+    const sameArea = isAbrasionSameArea();
+    if (sameArea && isNaN(parseFloat(document.getElementById('abrasionSurfaceArea').value))) errors.push('Abrasion: Surface Area is required.');
+    const abrData = getAbrasionData();
+    // E-3.1: mass before the test and after every 4 cycles is required. Heights
+    // and depth of wear are optional lab records; an initial height is only
+    // needed to work out the specimen's density.
+    getAbrasionSpecimenBlocks().forEach((block, i) => {
+      recalcAbrasionBlock(block);
+      const s = abrData.specimens[i];
+      ABRASION_CYCLES.forEach(c => {
+        if (isNaN(parseFloat(block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value))) errors.push(`Abrasion specimen ${i + 1}: weight at cycle ${c} is required.`);
+      });
+      if (!sameArea && isNaN(s.area)) errors.push(`Abrasion specimen ${i + 1}: surface area is required.`);
+      if (isNaN(s.height)) errors.push(`Abrasion specimen ${i + 1}: initial height is required for density (enter it, or the Avg Height at cycle 0).`);
+    });
+  }
+
+  if (sel.dimensions) {
+    const d = getDeclaredDims();
+    if (isNaN(d.l) || isNaN(d.w) || isNaN(d.th)) errors.push('Dimensions: declared length, width and thickness are needed (enter them, or a Nominal Size like "200 x 100 x 80 mm").');
+    if (isNaN(parseInt(document.getElementById('visualDefects').value, 10))) errors.push('Visual inspection: number of blocks with visual defects is required (0 if none).');
+    dimensionTable.rows().forEach((row, i) => {
+      ['dimL', 'dimW', 'dimTh'].forEach((cls, k) => {
+        if (isNaN(parseFloat(row.querySelector('.' + cls).value))) errors.push(`Dimensions block ${i + 1}: ${['length', 'width', 'thickness'][k]} is required.`);
+      });
+    });
+  }
+
+  return errors;
+}
+
+function getAvgStrengthForLog(){
+  if (!getSelectedTests().compressive) return '';
+  const data = getCompressiveData();
+  return data.length ? data[0].mean : '';
+}
+
+/* =========================================================================
+   Snapshot collect/apply/reset
+   ========================================================================= */
+function collectPageSnapshot(){
+  const sel = getSelectedTests();
+  return {
+    workDesc: document.getElementById('workDesc').value,
+    aeLetterRef: document.getElementById('aeLetterRef').value,
+    aeLetterDate: document.getElementById('aeLetterDate').value,
+    agreementNumber: document.getElementById('agreementNumber').value,
+    agreementDate: document.getElementById('agreementDate').value,
+    extraRef1: document.getElementById('extraRef1').value,
+    extraRef2: document.getElementById('extraRef2').value,
+    blockGrade: document.getElementById('blockGrade').value,
+    nominalSize: document.getElementById('nominalSize').value,
+    sourceSupplier: document.getElementById('sourceSupplier').value,
+    testingDate: document.getElementById('testingDate').value,
+    receiptDate: document.getElementById('receiptDate').value,
+    selectedTests: sel,
+    paverThickness: document.getElementById('paverThickness').value,
+    paverArris: document.getElementById('paverArris').value,
+    correctionFactorManualToggle: document.getElementById('correctionFactorManualToggle').checked,
+    correctionFactorManual: document.getElementById('correctionFactorManual').value,
+    establishedSD: document.getElementById('establishedSD').value,
+    blockShape: document.getElementById('blockShape').value,
+    planAreaMethod: document.getElementById('planAreaMethod').value,
+    cbBlockMass: document.getElementById('cbBlockMass').value,
+    cbRectMass: document.getElementById('cbRectMass').value,
+    compressive: compressiveTable.rows().map(row => ({
+      area: row.querySelector('.area').value, weight: row.querySelector('.weight').value, maxLoad: row.querySelector('.maxLoad').value,
+      wSub: row.querySelector('.wSub').value, wSsd: row.querySelector('.wSsd').value, thk: row.querySelector('.thk').value
+    })),
+    absorption: absorptionTable.rows().map(row => ({
+      dryWeight: row.querySelector('.dryWeight').value, wetWeight: row.querySelector('.wetWeight').value
+    })),
+    declaredLength: document.getElementById('declaredLength').value,
+    declaredWidth: document.getElementById('declaredWidth').value,
+    declaredThickness: document.getElementById('declaredThickness').value,
+    visualDefects: document.getElementById('visualDefects').value,
+    visualRemarks: document.getElementById('visualRemarks').value,
+    wfMsp: document.getElementById('wfMsp').value,
+    wfMsw: document.getElementById('wfMsw').value,
+    dimensions: dimensionTable.rows().map(row => ({
+      l: row.querySelector('.dimL').value, w: row.querySelector('.dimW').value, th: row.querySelector('.dimTh').value,
+      arris: row.querySelector('.dimArris').value, sq: row.querySelector('.dimSq').value
+    })),
+    abrasionCondition: getAbrasionCondition(),
+    abrasionSameArea: isAbrasionSameArea(),
+    abrasionSurfaceArea: document.getElementById('abrasionSurfaceArea').value,
+    abrasion: getAbrasionSpecimenBlocks().map(block => ({
+      area: block.querySelector('.spec-area').value,
+      initialHeight: block.querySelector('.spec-height').value,
+      massForDensity: block.querySelector('.spec-mass').value,
+      heights: ABRASION_CYCLES.map(c => block.querySelector(`.cycle-height[data-cycle="${c}"]`).value),
+      weights: ABRASION_CYCLES.map(c => block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value),
+      measuredThickness: block.querySelector('.measured-thickness').value,
+      fourEdge: block.querySelector('.four-edge-toggle').checked,
+      // edgeHeights[edge][cycleIndex]
+      edgeHeights: Array.from({ length: ABRASION_EDGES }, (_, e) =>
+        ABRASION_CYCLES.map(c => block.querySelector(`.edge-height[data-edge="${e}"][data-cycle="${c}"]`).value)),
+      edgeThickness: Array.from({ length: ABRASION_EDGES }, (_, e) =>
+        block.querySelector(`.edge-thickness[data-edge="${e}"]`).value)
+    }))
+  };
+}
+
+function applyPageSnapshot(snapshot){
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+  setVal('workDesc', snapshot.workDesc);
+  setVal('aeLetterRef', snapshot.aeLetterRef);
+  setVal('aeLetterDate', snapshot.aeLetterDate);
+  setVal('agreementNumber', snapshot.agreementNumber);
+  setVal('agreementDate', snapshot.agreementDate);
+  setVal('extraRef1', snapshot.extraRef1);
+  setVal('extraRef2', snapshot.extraRef2);
+  setVal('blockGrade', snapshot.blockGrade);
+  setVal('nominalSize', snapshot.nominalSize);
+  setVal('sourceSupplier', snapshot.sourceSupplier);
+  setVal('testingDate', snapshot.testingDate);
+  setVal('receiptDate', snapshot.receiptDate);
+  setVal('paverThickness', snapshot.paverThickness);
+  setVal('paverArris', snapshot.paverArris);
+  setVal('correctionFactorManual', snapshot.correctionFactorManual);
+  setVal('establishedSD', snapshot.establishedSD);
+  document.getElementById('blockShape').value = snapshot.blockShape === 'shaped' ? 'shaped' : 'rect';
+  if (['water', 'cardboard', 'direct'].includes(snapshot.planAreaMethod)) document.getElementById('planAreaMethod').value = snapshot.planAreaMethod;
+  setVal('cbBlockMass', snapshot.cbBlockMass);
+  setVal('cbRectMass', snapshot.cbRectMass);
+  document.getElementById('correctionFactorManualToggle').checked = !!snapshot.correctionFactorManualToggle;
+  document.getElementById('correctionFactorManualRow').style.display = snapshot.correctionFactorManualToggle ? 'flex' : 'none';
+  updateCorrectionFactorDisplay();
+  setVal('abrasionSurfaceArea', snapshot.abrasionSurfaceArea);
+  document.getElementById('abrasionCondition').value = snapshot.abrasionCondition === 'wet' ? 'wet' : 'dry';
+  document.getElementById('abrasionSameArea').checked = snapshot.abrasionSameArea !== false;
+
+  if (snapshot.selectedTests) {
+    document.getElementById('testCompressive').checked = !!snapshot.selectedTests.compressive;
+    document.getElementById('testAbsorption').checked = !!snapshot.selectedTests.absorption;
+    document.getElementById('testAbrasion').checked = !!snapshot.selectedTests.abrasion;
+    document.getElementById('testDimensions').checked = !!snapshot.selectedTests.dimensions;
+    updateTestCardVisibility();
+  }
+
+  if (Array.isArray(snapshot.compressive) && snapshot.compressive.length) {
+    compressiveTable.setCount(snapshot.compressive.length);
+    const rows = compressiveTable.rows();
+    snapshot.compressive.forEach((s, i) => {
+      if (!rows[i]) return;
+      if (s.area !== undefined) rows[i].querySelector('.area').value = s.area;
+      if (s.weight !== undefined) rows[i].querySelector('.weight').value = s.weight;
+      if (s.maxLoad !== undefined) rows[i].querySelector('.maxLoad').value = s.maxLoad;
+      ['wSub', 'wSsd', 'thk'].forEach(k => { if (s[k] !== undefined) rows[i].querySelector('.' + k).value = s[k]; });
+    });
+    recalcCompressive();
+  }
+  if (Array.isArray(snapshot.absorption) && snapshot.absorption.length) {
+    absorptionTable.setCount(snapshot.absorption.length);
+    const rows = absorptionTable.rows();
+    snapshot.absorption.forEach((s, i) => {
+      if (!rows[i]) return;
+      if (s.dryWeight !== undefined) rows[i].querySelector('.dryWeight').value = s.dryWeight;
+      if (s.wetWeight !== undefined) rows[i].querySelector('.wetWeight').value = s.wetWeight;
+    });
+    recalcAbsorption();
+  }
+  if (Array.isArray(snapshot.abrasion) && snapshot.abrasion.length) {
+    rebuildAbrasionSpecimens(snapshot.abrasion.length);
+    const blocks = getAbrasionSpecimenBlocks();
+    snapshot.abrasion.forEach((s, i) => {
+      const block = blocks[i];
+      if (!block) return;
+      if (Array.isArray(s.heights)) {
+        ABRASION_CYCLES.forEach((c, ci) => {
+          if (s.heights[ci] !== undefined) block.querySelector(`.cycle-height[data-cycle="${c}"]`).value = s.heights[ci];
+        });
+      }
+      if (Array.isArray(s.weights)) {
+        ABRASION_CYCLES.forEach((c, ci) => {
+          if (s.weights[ci] !== undefined) block.querySelector(`.cycle-weight[data-cycle="${c}"]`).value = s.weights[ci];
+        });
+      }
+      if (s.measuredThickness !== undefined) block.querySelector('.measured-thickness').value = s.measuredThickness;
+      if (s.area !== undefined) block.querySelector('.spec-area').value = s.area;
+      // Older snapshots kept one global initial height / block weight — carry
+      // them into every specimen so a reloaded report recalculates the same way.
+      const h = (s.initialHeight !== undefined) ? s.initialHeight : snapshot.abrasionInitialHeight;
+      const m = (s.massForDensity !== undefined) ? s.massForDensity : snapshot.abrasionBlockWeight;
+      if (h !== undefined && h !== null) block.querySelector('.spec-height').value = h;
+      if (m !== undefined && m !== null) block.querySelector('.spec-mass').value = m;
+      if (Array.isArray(s.edgeHeights)) {
+        s.edgeHeights.slice(0, ABRASION_EDGES).forEach((row, e) => {
+          if (!Array.isArray(row)) return;
+          ABRASION_CYCLES.forEach((c, ci) => {
+            if (row[ci] !== undefined && row[ci] !== null) block.querySelector(`.edge-height[data-edge="${e}"][data-cycle="${c}"]`).value = row[ci];
+          });
+        });
+      }
+      if (Array.isArray(s.edgeThickness)) {
+        s.edgeThickness.slice(0, ABRASION_EDGES).forEach((v, e) => {
+          if (v !== undefined && v !== null) block.querySelector(`.edge-thickness[data-edge="${e}"]`).value = v;
+        });
+      }
+      setAbrasionFourEdge(block, !!s.fourEdge);
+    });
+  }
+  applyAbrasionSameAreaVisibility();
+  ['declaredLength', 'declaredWidth', 'declaredThickness', 'visualDefects', 'visualRemarks', 'wfMsp', 'wfMsw'].forEach(id => setVal(id, snapshot[id]));
+  updatePlanAreaUI();
+  if (Array.isArray(snapshot.dimensions) && snapshot.dimensions.length) {
+    dimensionTable.setCount(snapshot.dimensions.length);
+    const rows = dimensionTable.rows();
+    snapshot.dimensions.forEach((s, i) => {
+      if (!rows[i]) return;
+      [['l', '.dimL'], ['w', '.dimW'], ['th', '.dimTh'], ['arris', '.dimArris'], ['sq', '.dimSq']].forEach(([k, cls]) => {
+        if (s[k] !== undefined) rows[i].querySelector(cls).value = s[k];
+      });
+    });
+  }
+  recalcDimensions();
+}
+
+function resetPageSpecificFields(){
+  ['workDesc', 'aeLetterRef', 'aeLetterDate', 'agreementNumber', 'agreementDate',
+   'extraRef1', 'extraRef2', 'blockGrade', 'sourceSupplier', 'testingDate', 'receiptDate',
+   'paverThickness', 'correctionFactorManual', 'establishedSD', 'abrasionSurfaceArea',
+   'declaredLength', 'declaredWidth', 'declaredThickness', 'visualRemarks', 'cbBlockMass', 'cbRectMass', 'wfMsp', 'wfMsw'
+  ].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('paverArris').value = '';
+  document.getElementById('correctionFactorManualToggle').checked = false;
+  document.getElementById('correctionFactorManualRow').style.display = 'none';
+  updateCorrectionFactorDisplay();
+  document.getElementById('nominalSize').value = '200 x 100 x 80 mm';
+  document.getElementById('abrasionCondition').value = 'dry';
+  document.getElementById('abrasionSameArea').checked = true;
+
+  document.getElementById('testCompressive').checked = true;
+  document.getElementById('testAbsorption').checked = true;
+  document.getElementById('testAbrasion').checked = true;
+  document.getElementById('testDimensions').checked = false;
+  document.getElementById('blockShape').value = 'rect';
+  document.getElementById('planAreaMethod').value = 'water';
+  document.getElementById('visualDefects').value = '0';
+  dimensionTable.rebuild(DEFAULT_DIMENSION_BLOCKS);
+  updateTestCardVisibility();
+
+  compressiveTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  absorptionTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  rebuildAbrasionSpecimens(DEFAULT_ABRASION_SPECIMENS);
+  applyAbrasionSameAreaVisibility();
+  updatePlanAreaUI();
+
+  document.getElementById('llmJsonInput').value = '';
+  document.getElementById('jsonApplyStatus').textContent = '';
+  document.getElementById('specimenJsonInput').value = '';
+  document.getElementById('specimenJsonApplyStatus').textContent = '';
+}
+
+/* =========================================================================
+   LLM-assisted auto-fill of the Engineer Letter fields
+   ========================================================================= */
+function getExtractionPrompt(){
+  return `You are extracting structured data from a letter (scan/photo/PDF) sent by an Assistant Engineer, for a precast concrete paving block test lab report.
+
+Read the attached letter (OCR it if scanned or an image) and return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences:
+
+{
+  "workDescription": string or null,
+  "aeLetterRef": string or null,
+  "aeLetterDate": string or null,
+  "agreementNumber": string or null,
+  "agreementDate": string or null,
+  "blockGrade": string or null,
+  "sourceSupplier": string or null,
+  "testingDate": string or null,
+  "receiptDate": string or null,
+  "extraRef1": string or null,
+  "extraRef2": string or null,
+  "addressee": string or null
+}
+
+Field notes:
+- workDescription: the SO number and/or work description mentioned.
+- aeLetterRef / aeLetterDate: the Assistant Engineer's own letter reference number and its date.
+- agreementNumber / agreementDate: the agreement referenced, if any.
+- blockGrade: the declared paving block grade, e.g. "M35".
+- sourceSupplier: the block source/supplier/precast yard, if named.
+- testingDate / receiptDate: relevant dates if stated.
+- extraRef1 / extraRef2: any other distinct reference mentioned that does not fit the fields above.
+- addressee: the sender's name, designation, and office as a multi-line address block, lines separated by \\n (a draft only — reviewed before saving).
+
+Rules:
+- Use null for anything not stated in the letter — never guess or invent a value.
+- Normalize every date to YYYY-MM-DD.
+- Output must be valid JSON and nothing else.`;
+}
+
+function onCopyPrompt(){
+  const statusEl = document.getElementById('jsonApplyStatus');
+  copyToClipboard(getExtractionPrompt(), () => {
+    statusEl.classList.remove('error');
+    statusEl.textContent = 'Prompt copied to clipboard — paste it into an LLM chat along with the letter PDF.';
+  });
+}
+
+function onApplyJson(){
+  const statusEl = document.getElementById('jsonApplyStatus');
+  statusEl.classList.remove('error');
+  const raw = document.getElementById('llmJsonInput').value.trim();
+  if (!raw) { statusEl.textContent = 'Paste the JSON returned by the LLM first.'; statusEl.classList.add('error'); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (err) { statusEl.textContent = `Invalid JSON: ${err.message}`; statusEl.classList.add('error'); return; }
+
+  const textFieldMap = {
+    workDescription: 'workDesc', aeLetterRef: 'aeLetterRef', agreementNumber: 'agreementNumber',
+    blockGrade: 'blockGrade', sourceSupplier: 'sourceSupplier', extraRef1: 'extraRef1', extraRef2: 'extraRef2'
+  };
+  const dateFieldMap = { aeLetterDate: 'aeLetterDate', agreementDate: 'agreementDate', testingDate: 'testingDate', receiptDate: 'receiptDate' };
+
+  const filled = [];
+  const skippedDates = [];
+  Object.entries(textFieldMap).forEach(([jsonKey, elId]) => {
+    const val = data[jsonKey];
+    if (val !== null && val !== undefined && val.toString().trim()) {
+      document.getElementById(elId).value = val.toString().trim();
+      filled.push(elId);
+    }
+  });
+  Object.entries(dateFieldMap).forEach(([jsonKey, elId]) => {
+    const val = data[jsonKey];
+    if (val !== null && val !== undefined && val.toString().trim()) {
+      const iso = normalizeDateStr(val);
+      if (iso) { document.getElementById(elId).value = iso; filled.push(elId); }
+      else skippedDates.push(`${jsonKey}="${val}"`);
+    }
+  });
+  if (data.addressee && data.addressee.toString().trim()) {
+    document.getElementById('addAddressForm').style.display = 'block';
+    document.getElementById('newAddressText').value = data.addressee.toString().trim();
+    filled.push('addressee (draft — review, then "Save & use")');
+  }
+
+  let msg = filled.length ? `Filled: ${filled.join(', ')}.` : 'Nothing matched — check the JSON keys against the prompt schema.';
+  if (skippedDates.length) msg += ` Could not parse date(s): ${skippedDates.join('; ')} — enter manually.`;
+  statusEl.textContent = msg;
+  if (!filled.length) statusEl.classList.add('error');
+}
+
+/* =========================================================================
+   LLM-assisted auto-fill of the specimen tables from a log book photo
+   ========================================================================= */
+function getSpecimenExtractionPrompt(){
+  const sel = getSelectedTests();
+  const wanted = [], notWanted = [];
+  (sel.compressive ? wanted : notWanted).push('Compressive Strength');
+  (sel.absorption ? wanted : notWanted).push('Water Absorption');
+  (sel.abrasion ? wanted : notWanted).push('Abrasion Resistance');
+
+  const shape = [];
+  const notes = [];
+
+  if (sel.compressive) {
+    const waterMode = getPlanAreaMode() === 'water';
+    shape.push(waterMode
+      ? `  "compressive": [ { "weightInWater": number or null, "ssdWeight": number or null, "thickness": number or null, "area": number or null, "weight": number or null, "load": number or null } ]`
+      : `  "compressive": [ { "area": number or null, "weight": number or null, "load": number or null } ]`);
+    notes.push(`COMPRESSIVE STRENGTH ("compressive"):
+- One entry per specimen row, top-to-bottom as in the log book.${waterMode ? `
+- weightInWater: the block's weight when suspended fully in water, in g (if recorded in kg, multiply by 1000).
+- ssdWeight: the saturated surface-dry weight (after draining and wiping), in g (if recorded in kg, multiply by 1000).
+- thickness: the block's mean thickness in mm.` : ''}
+- area: plan area of the specimen in sq.cm (if recorded in sq.mm, divide by 100); null if not written.
+- weight: specimen weight in kg (if recorded in g, divide by 1000).
+- load: maximum load in kN.
+- Do NOT return Apparent Strength, Corrected Strength, or Average — these are recalculated here.`);
+  }
+
+  if (sel.absorption) {
+    shape.push(`  "absorption": [ { "dryWeight": number or null, "wetWeight": number or null } ]`);
+    notes.push(`WATER ABSORPTION ("absorption"):
+- One entry per specimen row, top-to-bottom as in the log book.
+- dryWeight: oven-dry weight in kg (if recorded in g, divide by 1000).
+- wetWeight: saturated / wet weight in kg (if recorded in g, divide by 1000).
+- Do NOT return the absorption % or mean — these are recalculated here.`);
+  }
+
+  if (sel.abrasion) {
+    shape.push(`  "abrasion": {
+    "condition": "dry" or "wet" or null,
+    "surfaceArea": number or null,
+    "specimens": [
+      {
+        "surfaceArea": number or null,
+        "initialHeight": number or null,
+        "massForDensity": number or null,
+        "heights":       { "0": number or null, "4": number or null, "8": number or null, "12": number or null, "16": number or null },
+        "edgeHeights":   { "0": [e1, e2, e3, e4], "4": [e1, e2, e3, e4], "8": [e1, e2, e3, e4], "12": [e1, e2, e3, e4], "16": [e1, e2, e3, e4] } or null,
+        "weights":       { "0": number or null, "4": number or null, "8": number or null, "12": number or null, "16": number or null },
+        "depthOfWear": number or null,
+        "edgeDepthOfWear": [e1, e2, e3, e4] or null
+      }
+    ]
+  }`);
+    notes.push(`ABRASION RESISTANCE ("abrasion") — abrasion disc test, 16 cycles, usually 3 specimens:
+- condition: "dry" or "wet" if the log book says whether the specimens were tested dry or wet/saturated; otherwise null.
+- surfaceArea (top level): the surface area in sq.mm ONLY if one value is written for all specimens; otherwise null and give it per specimen.
+- One entry in "specimens" per specimen, in the order written.
+- surfaceArea (per specimen): that specimen's surface area in sq.mm, if written per specimen.
+- initialHeight: that specimen's initial height / thickness in mm, if written.
+- massForDensity: a specimen mass written specifically for density (in g), if any; otherwise null.
+- Cycle keys are the cycle numbers "0", "4", "8", "12", "16".
+- weights: mass of the specimen before the test ("0") and after cycles 4, 8, 12, 16, in g.
+- heights: the AVERAGE height (mm) at each cycle, if the log book writes a single/average value.
+- edgeHeights: if the log book records separate height readings at four edges (or four corners/points) for a cycle, give all four for that cycle, in the order written. Return ALL edge values — do not average them yourself. If only some cycles have edge readings, give those and null for the others. If there are no edge readings at all, set edgeHeights to null.
+- If both edge readings and an average are written, return both.
+- depthOfWear: depth of wear / measured thickness loss (mm) if a single/average value is written.
+- edgeDepthOfWear: if that depth is recorded at four edges/points, give all four (in order); otherwise null.
+- Do NOT return weight loss, volume loss, density, abrasion loss per 5000 mm², or any mean — these are recalculated here.`);
+  }
+
+  const skipLine = notWanted.length
+    ? `\nDo NOT read ${notWanted.join(' or ')} data even if it appears on the page — do not include ${notWanted.length === 1 ? 'that key' : 'those keys'} in the output.\n`
+    : '';
+
+  return `You are extracting precast concrete paving block test data from photo(s) of a handwritten lab log book page (a photo may be rotated — mentally rotate it the right way up before reading).
+
+Read ONLY these tests: ${wanted.join(', ')}.${skipLine}
+Return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences:
+
+{
+${shape.join(',\n')}
+}
+
+${notes.join('\n\n')}
+
+Rules:
+- Use null for any value you can't read confidently — never guess or invent a number.
+- If a requested test is not on the page(s) at all, return ${sel.abrasion ? 'an empty array (or null for "abrasion")' : 'an empty array'} for it.
+- Numbers must be plain JSON numbers (no units, no quotes).
+- Output must be valid JSON and nothing else.`;
+}
+
+function onCopySpecimenPrompt(){
+  const statusEl = document.getElementById('specimenJsonApplyStatus');
+  const sel = getSelectedTests();
+  if (!sel.compressive && !sel.absorption && !sel.abrasion) {
+    statusEl.textContent = 'Tick at least one test in section 5 first.';
+    statusEl.classList.add('error');
+    return;
+  }
+  copyToClipboard(getSpecimenExtractionPrompt(), () => {
+    statusEl.classList.remove('error');
+    const names = [];
+    if (sel.compressive) names.push('Compressive');
+    if (sel.absorption) names.push('Water Absorption');
+    if (sel.abrasion) names.push('Abrasion');
+    statusEl.textContent = `Prompt copied (covers: ${names.join(', ')}) — paste it into an LLM chat along with the log book photo(s).`;
+  });
+}
+
+// Small helpers for applying LLM JSON values
+function isNumLike(v){
+  return v !== null && v !== undefined && v !== '' && !isNaN(Number(v));
+}
+function setNumInput(input, v){
+  if (input && isNumLike(v)) { input.value = Number(v); return true; }
+  return false;
+}
+// Reads a per-cycle value from either { "0": .., "4": .. } or a 5-item array.
+function cycleValue(src, cycle, cycleIdx){
+  if (Array.isArray(src)) return src[cycleIdx];
+  if (src && typeof src === 'object') return (src[String(cycle)] !== undefined) ? src[String(cycle)] : src[cycle];
+  return undefined;
+}
+
+function applyAbrasionJson(ab, done, warnings){
+  if (ab.condition === 'dry' || ab.condition === 'wet') document.getElementById('abrasionCondition').value = ab.condition;
+  setNumInput(document.getElementById('abrasionSurfaceArea'), ab.surfaceArea);
+
+  const specs = Array.isArray(ab.specimens) ? ab.specimens : [];
+  if (!specs.length) {
+    done.push('Abrasion: global parameters only (no specimens in JSON)');
+    return;
+  }
+  if (specs.length > MAX_ABRASION_SPECIMENS) warnings.push(`Abrasion: only the first ${MAX_ABRASION_SPECIMENS} specimens were used.`);
+
+  rebuildAbrasionSpecimens(Math.min(specs.length, MAX_ABRASION_SPECIMENS));
+  const blocks = getAbrasionSpecimenBlocks();
+  let edgeSpecimens = 0;
+
+  specs.slice(0, blocks.length).forEach((s, i) => {
+    const block = blocks[i];
+    if (!s || typeof s !== 'object') return;
+
+    ABRASION_CYCLES.forEach((c, ci) => {
+      setNumInput(block.querySelector(`.cycle-height[data-cycle="${c}"]`), cycleValue(s.heights, c, ci));
+      setNumInput(block.querySelector(`.cycle-weight[data-cycle="${c}"]`), cycleValue(s.weights, c, ci));
+    });
+    setNumInput(block.querySelector('.measured-thickness'), isNumLike(s.depthOfWear) ? s.depthOfWear : s.measuredThickness);
+    setNumInput(block.querySelector('.spec-area'), s.surfaceArea);
+    // per-specimen value first; a single top-level value (older prompt) applies to all
+    setNumInput(block.querySelector('.spec-height'), isNumLike(s.initialHeight) ? s.initialHeight : ab.initialHeight);
+    setNumInput(block.querySelector('.spec-mass'), isNumLike(s.massForDensity) ? s.massForDensity : ab.blockWeight);
+
+    let anyEdge = false;
+    if (s.edgeHeights) {
+      ABRASION_CYCLES.forEach((c, ci) => {
+        const arr = cycleValue(s.edgeHeights, c, ci);
+        if (!Array.isArray(arr)) return;
+        if (arr.length > ABRASION_EDGES) warnings.push(`Abrasion specimen ${i + 1}, cycle ${c}: more than ${ABRASION_EDGES} edge readings — only the first ${ABRASION_EDGES} kept.`);
+        arr.slice(0, ABRASION_EDGES).forEach((v, e) => {
+          if (setNumInput(block.querySelector(`.edge-height[data-edge="${e}"][data-cycle="${c}"]`), v)) anyEdge = true;
+        });
+      });
+    }
+    const edgeDepth = Array.isArray(s.edgeDepthOfWear) ? s.edgeDepthOfWear : s.edgeThickness;
+    if (Array.isArray(edgeDepth)) {
+      edgeDepth.slice(0, ABRASION_EDGES).forEach((v, e) => {
+        if (setNumInput(block.querySelector(`.edge-thickness[data-edge="${e}"]`), v)) anyEdge = true;
+      });
+    }
+    if (anyEdge) edgeSpecimens++;
+    setAbrasionFourEdge(block, anyEdge); // computes averages from whatever edges were filled
+  });
+
+  // If specimens came with differing areas and no common one, switch to per-specimen areas.
+  const specAreas = specs.map(s => s && s.surfaceArea).filter(isNumLike).map(Number);
+  if (!isNumLike(ab.surfaceArea) && specAreas.length) {
+    const allSame = specAreas.every(a => a === specAreas[0]);
+    document.getElementById('abrasionSameArea').checked = allSame;
+    if (allSame) document.getElementById('abrasionSurfaceArea').value = specAreas[0];
+  }
+  applyAbrasionSameAreaVisibility();
+
+  done.push(`Abrasion (${getAbrasionCondition()}): ${blocks.length} specimen(s)` +
+    (edgeSpecimens ? `, ${edgeSpecimens} with four-edge readings (shown in the form; averages computed and printed)` : ''));
+}
+
+function onApplySpecimenJson(){
+  const statusEl = document.getElementById('specimenJsonApplyStatus');
+  statusEl.classList.remove('error');
+  const raw = document.getElementById('specimenJsonInput').value.trim()
+    .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, ''); // tolerate fenced output
+  if (!raw) { statusEl.textContent = 'Paste the JSON returned by the LLM first.'; statusEl.classList.add('error'); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (err) { statusEl.textContent = `Invalid JSON: ${err.message}`; statusEl.classList.add('error'); return; }
+
+  const sel = getSelectedTests();
+  const done = [], skipped = [], warnings = [];
+
+  // Compressive
+  if (Array.isArray(data.compressive) && data.compressive.length) {
+    if (!sel.compressive) skipped.push('Compressive (not ticked)');
+    else {
+      if (data.compressive.length > MAX_SPECIMENS) warnings.push(`Compressive: only the first ${MAX_SPECIMENS} rows were used.`);
+      const count = compressiveTable.setCount(Math.min(data.compressive.length, MAX_SPECIMENS));
+      const rows = compressiveTable.rows();
+      data.compressive.slice(0, count).forEach((s, i) => {
+        if (!rows[i] || !s) return;
+        setNumInput(rows[i].querySelector('.area'), s.area);
+        setNumInput(rows[i].querySelector('.weight'), s.weight);
+        setNumInput(rows[i].querySelector('.maxLoad'), s.load);
+        setNumInput(rows[i].querySelector('.wSub'), s.weightInWater);
+        setNumInput(rows[i].querySelector('.wSsd'), s.ssdWeight);
+        setNumInput(rows[i].querySelector('.thk'), s.thickness);
+      });
+      recalcCompressive();
+      done.push(`Compressive: ${count} row(s) — set the Correction Factor if you haven't already`);
+    }
+  }
+
+  // Water absorption
+  if (Array.isArray(data.absorption) && data.absorption.length) {
+    if (!sel.absorption) skipped.push('Water Absorption (not ticked)');
+    else {
+      if (data.absorption.length > MAX_SPECIMENS) warnings.push(`Water Absorption: only the first ${MAX_SPECIMENS} rows were used.`);
+      const count = absorptionTable.setCount(Math.min(data.absorption.length, MAX_SPECIMENS));
+      const rows = absorptionTable.rows();
+      data.absorption.slice(0, count).forEach((s, i) => {
+        if (!rows[i] || !s) return;
+        setNumInput(rows[i].querySelector('.dryWeight'), s.dryWeight);
+        setNumInput(rows[i].querySelector('.wetWeight'), s.wetWeight);
+      });
+      recalcAbsorption();
+      done.push(`Water Absorption: ${count} row(s)`);
+    }
+  }
+
+  // Abrasion
+  if (data.abrasion && typeof data.abrasion === 'object') {
+    if (!sel.abrasion) skipped.push('Abrasion (not ticked)');
+    else applyAbrasionJson(data.abrasion, done, warnings);
+  }
+
+  let msg = done.length
+    ? `Filled — ${done.join('; ')}.`
+    : 'Nothing filled — the JSON had no data for the ticked tests (expected keys: "compressive", "absorption", "abrasion").';
+  if (skipped.length) msg += ` Skipped: ${skipped.join(', ')} — tick the test in section 5 and apply again if you want it.`;
+  if (warnings.length) msg += ` Note: ${warnings.join(' ')}`;
+  msg += ' Check every value against the log book before generating.';
+  statusEl.textContent = msg;
+  if (!done.length) statusEl.classList.add('error');
+}
+
+/* =========================================================================
+   Wiring + init
+   ========================================================================= */
+function wireEvents(){
+  wireCommonEvents();
+  document.getElementById('compressiveBody').addEventListener('input', (e) => { if (e.target.tagName === 'INPUT') recalcCompressive(); });
+  ['paverThickness', 'paverArris'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => { updateCorrectionFactorDisplay(); recalcCompressive(); });
+  });
+  document.getElementById('correctionFactorManualToggle').addEventListener('change', (e) => {
+    document.getElementById('correctionFactorManualRow').style.display = e.target.checked ? 'flex' : 'none';
+    recalcCompressive();
+  });
+  document.getElementById('correctionFactorManual').addEventListener('input', recalcCompressive);
+  document.getElementById('absorptionBody').addEventListener('input', (e) => { if (e.target.tagName === 'INPUT') recalcAbsorption(); });
+  document.getElementById('abrasionSurfaceArea').addEventListener('input', updateAbrasionResults);
+  document.getElementById('abrasionCondition').addEventListener('change', updateAbrasionResults);
+  document.getElementById('abrasionSameArea').addEventListener('change', applyAbrasionSameAreaVisibility);
+  ['blockShape', 'planAreaMethod'].forEach(id => document.getElementById(id).addEventListener('change', () => { updatePlanAreaUI(); updateSpecimenPromptScope(); recalcDimensions(); }));
+  ['wfMsp', 'wfMsw', 'cbBlockMass'].forEach(id => document.getElementById(id).addEventListener('input', recalcDimensions));
+  ['cbBlockMass', 'cbRectMass'].forEach(id => document.getElementById(id).addEventListener('input', updatePlanAreaUI));
+  document.getElementById('dimensionBody').addEventListener('input', (e) => { if (e.target.tagName === 'INPUT') recalcDimensions(); });
+  ['declaredLength', 'declaredWidth', 'declaredThickness', 'visualDefects', 'nominalSize', 'blockGrade'].forEach(id => {
+    document.getElementById(id).addEventListener('input', recalcDimensions);
+  });
+  ['testCompressive', 'testAbsorption', 'testAbrasion', 'testDimensions'].forEach(id => {
+    document.getElementById(id).addEventListener('change', updateTestCardVisibility);
+  });
+  document.getElementById('copyPromptBtn').addEventListener('click', onCopyPrompt);
+  document.getElementById('applyJsonBtn').addEventListener('click', onApplyJson);
+  document.getElementById('copySpecimenPromptBtn').addEventListener('click', onCopySpecimenPrompt);
+  document.getElementById('applySpecimenJsonBtn').addEventListener('click', onApplySpecimenJson);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  populateMonthYear();
+  onConfigLoaded();
+  renderSignatoryFields();
+  wireEvents();
+  loadConfig();
+});
+
+/* =========================================================================
+   Document generation
+   ========================================================================= */
+function joinWithAnd(items){
+  if (items.length <= 1) return items.join('');
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+// IS 15658:2021 Table 1 grades (fck, MPa) and Table 3 (ii) requirements:
+//   individual >= fck - 3
+//   average    >= greater of (fck + 0.825 × established SD, rounded to nearest 0.5 MPa) and (fck + 3)
+//   SD is taken as 5 MPa when no established value is available (Table 3 Note 2).
+const PAVING_GRADES = [30, 35, 40, 50, 55];
+
+function getEstablishedSD(){
+  const el = document.getElementById('establishedSD');
+  return el ? parseFloat(el.value) : NaN;
+}
+
+function compressiveRequirement(fck, sd){
+  const sdAssumed = isNaN(sd) || sd <= 0;
+  const sdUsed = sdAssumed ? 5 : sd;
+  const viaSD = Math.round((fck + 0.825 * sdUsed) * 2) / 2;
+  return { average: Math.max(viaSD, fck + 3), individual: fck - 3, sdUsed, sdAssumed };
+}
+
+function parseGradeFck(gradeText){
+  const m = String(gradeText || '').match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : NaN;
+}
+
+// Used only when Block Grade is left blank — the highest Table 1 grade whose
+// Table 3 average AND individual requirements the results satisfy.
+function guessBlockGrade(meanStrength, minIndividual, sd){
+  let guessed = null;
+  for (const g of PAVING_GRADES) {
+    const req = compressiveRequirement(g, sd);
+    if (meanStrength >= req.average && minIndividual >= req.individual) guessed = g;
+  }
+  return guessed;
+}
+
+function fmt1(x){ return (Math.round(x * 10) / 10).toFixed(1); }
+
+async function buildDocx(){
+  const {
+    Document, Paragraph, TextRun, Table, TableRow, TableCell,
+    WidthType, AlignmentType, BorderStyle, VerticalAlign, LevelFormat
+  } = docx;
+
+  const FONT_SIZE = 22; // half-points; 22 = 11pt
+
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const noBorders = { top:noBorder, bottom:noBorder, left:noBorder, right:noBorder, insideHorizontal:noBorder, insideVertical:noBorder };
+  const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+  const gridBorders = { top:thinBorder, bottom:thinBorder, left:thinBorder, right:thinBorder, insideHorizontal:thinBorder, insideVertical:thinBorder };
+
+  function run(text, opts = {}){
+    return new TextRun({ text: text == null ? '' : String(text), bold: !!opts.bold, italics: !!opts.italics, size: opts.size || FONT_SIZE });
+  }
+  function cell(text, opts = {}){
+    return new TableCell({
+      width: opts.width ? { size: opts.width, type: WidthType.PERCENTAGE } : undefined,
+      verticalAlign: VerticalAlign.CENTER,
+      rowSpan: opts.rowSpan || undefined,
+      columnSpan: opts.columnSpan || undefined,
+      children: [ new Paragraph({ alignment: opts.align || AlignmentType.LEFT, children: [ run(text, opts) ] }) ]
+    });
+  }
+
+  const REF_NUMBERING = 'paving-report-refs';
+  const NOTES_NUMBERING = 'paving-report-notes';
+  const sel = getSelectedTests();
+  const children = [];
+
+  // 1. Report No (left) and Date (right) on the same line
+  const reportNo = composedReportNumber();
+  const reportDateFmt = fmtDate(document.getElementById('reportDate').value);
+  children.push(new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: noBorders,
+    rows: [ new TableRow({ children: [
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [ new Paragraph({ alignment: AlignmentType.LEFT, children: [ run(reportNo, { bold: true }) ] }) ]}),
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [ new Paragraph({ alignment: AlignmentType.RIGHT, children: [ run(reportDateFmt) ] }) ]})
+    ]})]
+  }));
+  children.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+
+  // 2. Addressee
+  children.push(new Paragraph({ children: [ run('To,') ], spacing: { after: 40 } }));
+  const addrLines = selectedAddress.address.split('\n').map(l => l.trim()).filter(Boolean);
+  addrLines.forEach((line, i) => {
+    children.push(new Paragraph({ children: [ run(line) ], spacing: { after: i === addrLines.length - 1 ? 200 : 0 } }));
+  });
+
+  // 3. Subject — reflects only the tests actually selected
+  const testDisplayNames = [];
+  if (sel.compressive) testDisplayNames.push('Compressive Strength');
+  if (sel.absorption) testDisplayNames.push('Water Absorption');
+  if (sel.abrasion) testDisplayNames.push('Abrasion Resistance');
+  if (sel.dimensions) testDisplayNames.unshift('Visual Inspection and Dimensions');
+  children.push(new Paragraph({
+    spacing: { after: 200 },
+    children: [ run(`Sub: ${joinWithAnd(testDisplayNames)} of Concrete Paving Blocks - Results`, { bold: true }) ]
+  }));
+
+  // 4. References — same fallback conventions as cube/brick, plus ONE
+  // MERGED IS 15658:2021 reference (base spec line, always present whenever
+  // any test is selected), naming the Annex for each selected test:
+  // C = Water Absorption, D = Compressive Strength, E = Abrasion Resistance.
+  const workDesc = document.getElementById('workDesc').value.trim();
+  const ref1 = workDesc ? workDesc : null; // omitted entirely from the list if blank, not "Not Specified"
+
+  const aeLetterRef = document.getElementById('aeLetterRef').value.trim();
+  const aeLetterDate = fmtDate(document.getElementById('aeLetterDate').value);
+  const ref2 = aeLetterRef
+    ? (aeLetterDate ? `${aeLetterRef} Letter from Assistant Engineer dated ${aeLetterDate}` : `${aeLetterRef} Letter from Assistant Engineer`)
+    : 'Not Specified';
+
+  const agreementNumber = document.getElementById('agreementNumber').value.trim();
+  const agreementDate = fmtDate(document.getElementById('agreementDate').value);
+  const ref3 = agreementNumber
+    ? (agreementDate ? `Agreement No ${agreementNumber} dated ${agreementDate}` : `Agreement No ${agreementNumber}`)
+    : 'Letter of request submitted to the department for testing';
+
+  const annexParts = [];
+  if (sel.dimensions) annexParts.push('Cl. 7.1 and Annex B - Visual Inspection and Dimensions');
+  if (sel.absorption) annexParts.push('Annex C - Water Absorption');
+  if (sel.compressive) annexParts.push('Annex D - Compressive Strength');
+  if (sel.abrasion) annexParts.push('Annex E - Abrasion Resistance');
+  const anyTestSelected = sel.compressive || sel.absorption || sel.abrasion || sel.dimensions;
+  const standardRefs = anyTestSelected
+    ? [`IS 15658:2021 - Concrete Paving Blocks - Specification${annexParts.length ? ` (${annexParts.join('; ')})` : ''}`]
+    : [];
+
+  const extraRef1 = document.getElementById('extraRef1').value.trim();
+  const extraRef2 = document.getElementById('extraRef2').value.trim();
+  const optionalExtras = [extraRef1, extraRef2].filter(Boolean);
+
+  const mainRefs = [ref1, ref2, ref3].filter(Boolean); // ref2/ref3 always have a fallback string, ref1 is dropped entirely if blank
+  const allRefs = [...mainRefs, ...standardRefs, ...optionalExtras];
+  children.push(new Paragraph({ children: [ run('Ref:') ], spacing: { after: 40 } }));
+  allRefs.forEach((ref, i) => {
+    children.push(new Paragraph({
+      numbering: { reference: REF_NUMBERING, level: 0 },
+      spacing: { after: i === allRefs.length - 1 ? 200 : 40 },
+      children: [ run(ref) ]
+    }));
+  });
+
+  // Ref number for the section labels — all three tests point at the SAME
+  // merged IS 15658 reference, since the base spec line covers all of them.
+  const mergedRefNumber = standardRefs.length ? mainRefs.length + 1 : null;
+  const refNumbers = { compressive: mergedRefNumber, absorption: mergedRefNumber, abrasion: mergedRefNumber, dimensions: mergedRefNumber };
+
+  // Section letters, in the same fixed priority order (Compressive, Absorption, Abrasion)
+  const letters = ['A', 'B', 'C', 'D'];
+  let letterCursor = 0;
+  const sectionLetters = {};
+  if (sel.dimensions) sectionLetters.dimensions = letters[letterCursor++]; // printed first — checked before the other tests (Cl. 7.1.2)
+  if (sel.compressive) sectionLetters.compressive = letters[letterCursor++];
+  if (sel.absorption) sectionLetters.absorption = letters[letterCursor++];
+  if (sel.abrasion) sectionLetters.abrasion = letters[letterCursor++];
+
+  // 5. Block Grade / Nominal Size / Source-Supplier / Testing Date table
+  const blockGradeRaw = document.getElementById('blockGrade').value.trim();
+  const sourceSupplierRaw = document.getElementById('sourceSupplier').value.trim();
+  const blockGrade = blockGradeRaw ? `${blockGradeRaw}*` : 'Not Specified';
+  const sourceSupplier = sourceSupplierRaw ? `${sourceSupplierRaw}*` : 'Not Specified';
+  const hasStarredValue = Boolean(blockGradeRaw || sourceSupplierRaw);
+  const nominalSize = orNotSpecified(document.getElementById('nominalSize').value);
+  const testingDate = fmtDate(document.getElementById('testingDate').value); // required
+
+  children.push(new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: gridBorders,
+    rows: [
+      new TableRow({ children: [
+        cell('Block Grade', { bold: true, width: 20 }), cell(blockGrade, { width: 30 }),
+        cell('Nominal Size', { bold: true, width: 20 }), cell(nominalSize, { width: 30 })
+      ]}),
+      new TableRow({ children: [
+        cell('Source / Supplier', { bold: true, width: 20 }), cell(sourceSupplier, { width: 30 }),
+        cell('Date of Testing', { bold: true, width: 20 }), cell(testingDate, { width: 30 })
+      ]}),
+      new TableRow({ children: [
+        cell('Block Shape', { bold: true, width: 20 }),
+        cell(isShapedBlock() ? 'Zig-zag / interlocking (shaped)' : 'Rectangular', { width: 80, columnSpan: 3 })
+      ]})
+    ]
+  }));
+
+  // 6. Date of Receipt of Specimen — same tight-spacing/reduced-font convention as the cube report
+  const RECEIPT_LINE_FONT_SIZE = FONT_SIZE - 2;
+  const receiptDate = orNotSpecified(fmtDate(document.getElementById('receiptDate').value));
+  children.push(new Paragraph({
+    spacing: { before: 0, after: 200 },
+    children: [
+      run('Date of Receipt of Specimen: ', { bold: true, size: RECEIPT_LINE_FONT_SIZE }),
+      run(receiptDate, { size: RECEIPT_LINE_FONT_SIZE })
+    ]
+  }));
+
+  // 7D (printed first). Visual Inspection & Dimensions — IS 15658:2021 Cl. 7.1, 7.2, Table 2, Annex B
+  let dimensionForNotes = null;
+  if (sel.dimensions) {
+    const dd = getDimensionData();
+    dimensionForNotes = dd;
+    const d = dd.decl;
+    children.push(new Paragraph({
+      spacing: { before: 100, after: 60 },
+      children: [ run(`${sectionLetters.dimensions}. Visual Inspection and Dimensions (Ref ${refNumbers.dimensions})`, { bold: true }) ]
+    }));
+    const n = dd.blocks.length;
+    let visualText = isNaN(dd.visualDefects) ? 'Not Specified' : `${dd.visualDefects} of ${n} block${n === 1 ? '' : 's'} with visual defects`;
+    if (dd.visualRemarks) visualText += ` (${dd.visualRemarks})`;
+    children.push(new Paragraph({
+      spacing: { after: 100 },
+      children: [ run(`Visual inspection in natural daylight, blocks laid in a paving pattern and viewed from about 2 m: ${visualText}.`, { italics: true, size: 18 }) ]
+    }));
+    const fmtMm0 = x => isNaN(x) ? '—' : String(Math.round(x));
+    const fmtMm1 = x => isNaN(x) ? '—' : (Math.round(x * 10) / 10).toFixed(1);
+    const showWf = !dd.shaped && dd.blocks.some(b => !isNaN(b.wf));
+    const head = [
+      'Sl No', dd.shaped ? 'Overall Length\n(mm)' : 'Length\n(mm)', dd.shaped ? 'Overall Width\n(mm)' : 'Width\n(mm)',
+      'Thickness\n(mm)', 'Aspect Ratio\nL/Th', 'Arris Width\n(mm)', 'Squareness\nDev. (mm)'
+    ];
+    if (showWf) head.push('Asw/Asp');
+    const rows = [ new TableRow({ tableHeader: true, children: head.map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) }) ];
+    dd.blocks.forEach((b, i) => {
+      rows.push(new TableRow({ children: [
+        cell(i + 1, { align: AlignmentType.CENTER }),
+        cell(fmtMm0(b.l), { align: AlignmentType.CENTER }),
+        cell(fmtMm0(b.w), { align: AlignmentType.CENTER }),
+        cell(fmtMm0(b.th), { align: AlignmentType.CENTER }),
+        cell(isNaN(b.ratio) ? '—' : b.ratio.toFixed(1), { align: AlignmentType.CENTER }),
+        cell(fmtMm1(b.arris), { align: AlignmentType.CENTER }),
+        cell(fmtMm1(b.sq), { align: AlignmentType.CENTER }),
+        ...(showWf ? [cell(isNaN(b.wf) ? '—' : b.wf.toFixed(2), { align: AlignmentType.CENTER })] : [])
+      ]}));
+    });
+    const m = dd.means;
+    rows.push(new TableRow({ children: [
+      cell('Mean', { bold: true, align: AlignmentType.CENTER }),
+      cell(fmtMm0(m.l), { bold: true, align: AlignmentType.CENTER }),
+      cell(fmtMm0(m.w), { bold: true, align: AlignmentType.CENTER }),
+      cell(fmtMm0(m.th), { bold: true, align: AlignmentType.CENTER }),
+      cell(isNaN(m.ratio) ? '—' : m.ratio.toFixed(1), { bold: true, align: AlignmentType.CENTER }),
+      cell(fmtMm1(m.arris), { bold: true, align: AlignmentType.CENTER }),
+      cell(fmtMm1(m.sq), { bold: true, align: AlignmentType.CENTER }),
+      ...(showWf ? [cell(isNaN(m.wf) ? '—' : m.wf.toFixed(2), { bold: true, align: AlignmentType.CENTER })] : [])
+    ]}));
+    const reqText = x => isNaN(x) ? '—' : x;
+    rows.push(new TableRow({ children: [
+      cell('Table 2', { italics: true, align: AlignmentType.CENTER, size: 18 }),
+      cell(`${reqText(d.l)} ± ${dd.tol.lw}`, { italics: true, align: AlignmentType.CENTER, size: 18 }),
+      cell(`${reqText(d.w)} ± ${dd.tol.lw}`, { italics: true, align: AlignmentType.CENTER, size: 18 }),
+      cell(`${reqText(d.th)} ± ${dd.tol.th}`, { italics: true, align: AlignmentType.CENTER, size: 18 }),
+      cell('4 max', { italics: true, align: AlignmentType.CENTER, size: 18 }),
+      cell(`${ARRIS_MIN} – ${ARRIS_MAX} (± ${ARRIS_TOL})`, { italics: true, align: AlignmentType.CENTER, size: 18 }),
+      cell(`Nil, ± ${dd.tol.sq}`, { italics: true, align: AlignmentType.CENTER, size: 18 }),
+      ...(showWf ? [cell(`${WEAR_FACE_RATIO_MIN} min`, { italics: true, align: AlignmentType.CENTER, size: 18 })] : [])
+    ]}));
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows }));
+    children.push(new Paragraph({
+      spacing: { before: 60, after: 100 },
+      children: [ run('* Each value is the mean of the readings on that block: length 2, width 3, thickness 4 positions (nearest 1 mm); arris 4 and squareness 6 positions (nearest 0.1 mm), as per Annex B.'
+        + (dd.shaped ? ' For the zig-zag blocks, length and width are overall dimensions, the sides of the smallest rectangle enclosing the block, excluding spacer nibs (Cl. 3.15, 3.16), measured tip to tip.' : '')
+        + (showWf ? ' Asw/Asp from length, width and arris width.' : ''), { italics: true, size: 18 }) ]
+    }));
+    if (dd.shaped && dd.wfShaped) {
+      children.push(new Paragraph({
+        spacing: { after: 100 },
+        children: [ run('Ratio of wearing face area to plan area, Asw/Asp: ', { bold: true, size: 20 }),
+                    run(`${dd.wfShaped.ratio.toFixed(2)} (cardboard tracing, B-3.3.3; Table 2 minimum ${WEAR_FACE_RATIO_MIN}).`, { size: 20 }) ]
+      }));
+    }
+  }
+
+  // 7A. Compressive Strength — IS 15658:2021 Annex D (reported to 0.1 MPa, D-6)
+  let compressiveForNotes = null; // { mean, minIndividual } for the NOTES section below
+  if (sel.compressive) {
+    const data = getCompressiveData();
+    const correctedVals = data.map(s => s.corrected).filter(v => !isNaN(v));
+    // compared after rounding to 0.1 MPa, the precision results are reported to (D-6, IS 2)
+    const r1 = x => Math.round(x * 10) / 10;
+    compressiveForNotes = {
+      mean: data.length ? r1(data[0].mean) : NaN,
+      minIndividual: correctedVals.length ? r1(Math.min(...correctedVals)) : NaN
+    };
+    const factor = getEffectiveCorrectionFactor();
+    const manualOn = document.getElementById('correctionFactorManualToggle').checked;
+    const paverThickness = document.getElementById('paverThickness').value;
+    const paverArris = document.getElementById('paverArris').value === 'chamfered' ? 'Arrised/Chamfered' : 'Plain';
+    const factorNote = manualOn
+      ? `* Correction factor of ${isNaN(factor) ? 'Not Specified' : factor} applied to every specimen's apparent strength (manually entered — not from IS 15658:2021 Table 5).`
+      : `* Correction factor of ${isNaN(factor) ? 'Not Specified' : factor.toFixed(3)} applied to every specimen's apparent strength, per IS 15658:2021 Table 5 (${paverThickness} mm nominal thickness, ${paverArris}).`;
+    // How the plan area was found — stated only for shaped blocks
+    const paMode = getPlanAreaMode();
+    const cbA = getCardboardAreaCm2();
+    const planAreaNote = {
+      rect: '',
+      water: '* Shaped (zig-zag/interlocking) blocks: plan area of each block found by the water method of IS 15658:2021 B-3.3.1 (Method 1); volume from the weight in water and the saturated surface-dry weight, divided by the mean thickness.',
+      cardboard: `* Shaped (zig-zag/interlocking) blocks: plan area found by the cardboard tracing method of IS 15658:2021 B-3.3.2 (Method 2), Asp = 20 000 × msp / mstd = ${isNaN(cbA) ? 'Not Specified' : fmtIS(cbA * 100) + ' mm²'}, applied to all blocks.`,
+      direct: '* Shaped (zig-zag/interlocking) blocks: plan area as determined by IS 15658:2021 B-3.3.'
+    }[paMode];
+    children.push(new Paragraph({
+      spacing: { before: 100, after: 100 },
+      children: [ run(`${sectionLetters.compressive}. Compressive Strength (Ref ${refNumbers.compressive})`, { bold: true }) ]
+    }));
+    const headerRow = new TableRow({ tableHeader: true, children: ['Sl No','Plan Area\n(sq.cm)','Weight\n(kg)','Load\n(kN)','Apparent\nStrength (MPa)','Corrected\nStrength (MPa)','Average\n(MPa)'].map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+    const dataRows = data.map((s, i) => {
+      const rowCells = [
+        cell(i + 1, { align: AlignmentType.CENTER }),
+        cell(s.area, { align: AlignmentType.CENTER }),
+        cell(Number(s.weight).toFixed(3), { align: AlignmentType.CENTER }),
+        cell(s.load, { align: AlignmentType.CENTER }),
+        cell(fmt1(s.apparent), { align: AlignmentType.CENTER }),
+        cell(fmt1(s.corrected), { align: AlignmentType.CENTER })
+      ];
+      if (i === 0) rowCells.push(cell(fmt1(s.mean), { align: AlignmentType.CENTER, rowSpan: data.length }));
+      return new TableRow({ children: rowCells });
+    });
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows: [headerRow, ...dataRows] }));
+    children.push(new Paragraph({
+      spacing: { before: 60, after: planAreaNote ? 0 : 100 },
+      children: [ run(factorNote, { italics: true, size: 18 }) ]
+    }));
+    if (planAreaNote) {
+      children.push(new Paragraph({
+        spacing: { before: 20, after: 100 },
+        children: [ run(planAreaNote, { italics: true, size: 18 }) ]
+      }));
+    }
+  }
+
+  // 7B. Water Absorption — IS 15658:2021 Annex C (reported to 0.1 percent, C-5)
+  let absorptionForNotes = null;
+  if (sel.absorption) {
+    const data = getAbsorptionData();
+    const vals = data.map(s => s.absorption).filter(v => !isNaN(v));
+    absorptionForNotes = { mean: data.length ? data[0].mean : NaN, maxIndividual: vals.length ? Math.max(...vals) : NaN };
+    children.push(new Paragraph({
+      spacing: { before: 200, after: 100 },
+      children: [ run(`${sectionLetters.absorption}. Water Absorption (Ref ${refNumbers.absorption})`, { bold: true }) ]
+    }));
+    const headerRow = new TableRow({ tableHeader: true, children: ['Sl No','Dry Weight\n(kg)','Wet Weight\n(kg)','Water Absorption\n(%)','Mean Absorption\n(%)'].map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+    const dataRows = data.map((s, i) => {
+      const rowCells = [
+        cell(i + 1, { align: AlignmentType.CENTER }),
+        cell(Number(s.dryWeight).toFixed(3), { align: AlignmentType.CENTER }),
+        cell(Number(s.wetWeight).toFixed(3), { align: AlignmentType.CENTER }),
+        cell(fmt1(s.absorption), { align: AlignmentType.CENTER })
+      ];
+      if (i === 0) rowCells.push(cell(fmt1(s.mean), { align: AlignmentType.CENTER, rowSpan: data.length }));
+      return new TableRow({ children: rowCells });
+    });
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows: [headerRow, ...dataRows] }));
+  }
+
+  // 7C. Abrasion Resistance — IS 15658:2021 Annex E
+  let abrasionForNotes = null;
+  if (sel.abrasion) {
+    const abr = getAbrasionData();
+    abrasionForNotes = abr;
+    const data = abr.specimens;
+    const condLabel = abr.condition === 'wet' ? 'Wet / saturated' : 'Dry';
+    children.push(new Paragraph({
+      spacing: { before: 200, after: 60 },
+      children: [ run(`${sectionLetters.abrasion}. Abrasion Resistance (Ref ${refNumbers.abrasion})`, { bold: true }) ]
+    }));
+    const sameArea = isAbrasionSameArea();
+    const commonArea = parseFloat(document.getElementById('abrasionSurfaceArea').value);
+    children.push(new Paragraph({
+      spacing: { after: 100 },
+      children: [ run(`Specimen condition: ${condLabel}. ${sameArea && !isNaN(commonArea) ? `Surface area of each specimen: ${commonArea} sq.mm. ` : ''}16 cycles of 22 revolutions; specimen mass recorded before the test and after every 4 cycles.`, { italics: true, size: 18 }) ]
+    }));
+
+    // Per-specimen cycle tables (Avg Height row only when heights were recorded)
+    data.forEach((s, i) => {
+      children.push(new Paragraph({
+        spacing: { before: 80, after: 60 },
+        children: [ run(`Specimen ${i + 1}`, { bold: true }) ]
+      }));
+      const cycleHeaderRow = new TableRow({ tableHeader: true, children: ['Cycle', ...ABRASION_CYCLES.map(String)].map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+      const rows = [cycleHeaderRow];
+      if (s.heights.some(h => !isNaN(h))) {
+        rows.push(new TableRow({ children: [cell('Avg Height (mm)', { bold: true }), ...s.heights.map(h => cell(isNaN(h) ? '—' : h, { align: AlignmentType.CENTER }))] }));
+      }
+      rows.push(new TableRow({ children: [cell('Mass after Cycle (g)', { bold: true }), ...s.weights.map(w => cell(isNaN(w) ? '—' : w, { align: AlignmentType.CENTER }))] }));
+      children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows }));
+    });
+    // Edge readings are never printed — only their averages. Say so when used.
+    const edgeSpecs = data.map((s, i) => (s.fourEdge && s.heights.some(h => !isNaN(h))) ? i + 1 : null).filter(Boolean);
+    if (edgeSpecs.length) {
+      const which = edgeSpecs.length === data.length ? 'all specimens' : `Specimen ${joinWithAnd(edgeSpecs.map(String))}`;
+      children.push(new Paragraph({
+        spacing: { before: 60, after: 60 },
+        children: [ run(`* For ${which}, heights are the mean of readings taken at four edges.`, { italics: true, size: 18 }) ]
+      }));
+    }
+
+    // Summary table: ΔV = Δm / ρR (E-4); individual and mean to nearest 1000 mm³ per 5000 mm² (E-5)
+    children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [ run('Summary', { bold: true }) ] }));
+    const summaryHeader = ['Sl No'];
+    if (!sameArea) summaryHeader.push('Surface Area\n(sq.mm)');
+    summaryHeader.push('Density ρR\n(g/cm³)','Mass Loss\nΔm (g)','Volume Loss\nΔV (mm³)','Abrasion Loss\n(mm³ per 5000 mm²)','Mean\n(mm³ per 5000 mm²)');
+    const summaryHeaderRow = new TableRow({ tableHeader: true, children: summaryHeader.map(h => cell(h, { bold: true, align: AlignmentType.CENTER })) });
+    const summaryRows = data.map((s, i) => {
+      const rowCells = [ cell(i + 1, { align: AlignmentType.CENTER }) ];
+      if (!sameArea) rowCells.push(cell(isNaN(s.area) ? '—' : s.area, { align: AlignmentType.CENTER }));
+      rowCells.push(
+        cell(isNaN(s.density) ? '—' : (s.density * 1000).toFixed(3), { align: AlignmentType.CENTER }),
+        cell(isNaN(s.weightLoss) ? '—' : s.weightLoss.toFixed(1), { align: AlignmentType.CENTER }),
+        cell(isNaN(s.volumeLoss) ? '—' : fmtIS(s.volumeLoss), { align: AlignmentType.CENTER }),
+        cell(isNaN(s.normalizedLoss) ? '—' : fmtIS(s.normalizedLoss), { align: AlignmentType.CENTER })
+      );
+      if (i === 0) rowCells.push(cell(isNaN(abr.mean) ? '—' : fmtIS(abr.mean), { align: AlignmentType.CENTER, rowSpan: data.length }));
+      return new TableRow({ children: rowCells });
+    });
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows: [summaryHeaderRow, ...summaryRows] }));
+    children.push(new Paragraph({
+      spacing: { before: 60, after: 100 },
+      children: [ run('* Density of each specimen from its own mass, surface area and initial height. Mean worked out from the unrounded specimen values, then rounded to the nearest 1000 mm³ per 5000 mm².', { italics: true, size: 18 }) ]
+    }));
+  }
+
+  if (hasStarredValue) {
+    children.push(new Paragraph({
+      spacing: { before: 100, after: 200 },
+      children: [ run('* As reported by the client via Ref 2', { italics: true, size: 18 }) ]
+    }));
+  }
+
+  // 9. NOTES — native numbered list, same convention as the cube report;
+  // only the notes relevant to the selected tests are included. Requirement
+  // values are from IS 15658:2021 Table 3.
+  const NOTES_FONT_SIZE = 18; // half-points; 18 = 9pt
+  children.push(new Paragraph({ spacing: { before: 200, after: 80 }, children: [ run('NOTES:', { bold: true }) ] }));
+  const notes = ['The results reported pertain only to the specimens submitted in the lab.'];
+  const verdict = ok => ok ? 'meets' : 'does not meet';
+  if (sel.dimensions && dimensionForNotes) {
+    const dd = dimensionForNotes;
+    let line = 'As per IS 15658:2021 Cl. 9.1.2 and 9.1.3, not more than one block in the sample shall have visual defects, and the sample shall meet the dimensions and tolerances of Table 2.';
+    const outside = dd.failedBlocks.map(f => `Block ${f.n} (${f.fails.join(', ')})`);
+    if (dd.wfShaped && !dd.wfShaped.ok) outside.push(`wearing face ratio ${dd.wfShaped.ratio.toFixed(2)} below ${WEAR_FACE_RATIO_MIN}`);
+    line += dd.dimsOk ? ' All blocks are within the Table 2 tolerances' : ` Outside Table 2: ${outside.join('; ')}`;
+    line += `, so the sample ${verdict(dd.dimsOk && dd.visualOk !== false)} this requirement.`;
+    if (dd.gradeMin) line += ` Declared thickness ${dd.decl.th} mm ${dd.gradeMin.ok ? 'meets' : 'is below'} the Table 1 minimum of ${dd.gradeMin.min} mm for M ${dd.gradeMin.fck}.`;
+    notes.push(line);
+  }
+  if (sel.compressive) {
+    const sd = getEstablishedSD();
+    const sdText = (req) => req.sdAssumed
+      ? 'standard deviation taken as 5 MPa in the absence of an established value'
+      : `established standard deviation ${req.sdUsed} MPa`;
+    const fck = parseGradeFck(blockGradeRaw);
+    const c = compressiveForNotes || { mean: NaN, minIndividual: NaN };
+    if (blockGradeRaw && !isNaN(fck)) {
+      const req = compressiveRequirement(fck, sd);
+      let line = `As per IS 15658:2021 Table 3, for ${blockGradeRaw} (fck = ${fck} MPa) the corrected compressive strength shall be not less than ${fmt1(req.average)} MPa on average (${sdText(req)}) and not less than ${fmt1(req.individual)} MPa for any individual block.`;
+      if (!isNaN(c.mean) && !isNaN(c.minIndividual)) {
+        line += ` Mean obtained ${fmt1(c.mean)} MPa, lowest individual ${fmt1(c.minIndividual)} MPa, so the sample ${verdict(c.mean >= req.average && c.minIndividual >= req.individual)} this requirement.`;
+      }
+      notes.push(line);
+    } else if (!isNaN(c.mean) && !isNaN(c.minIndividual)) {
+      const g = guessBlockGrade(c.mean, c.minIndividual, sd);
+      const reqText = sdText(compressiveRequirement(30, sd));
+      if (g !== null) {
+        notes.push(`Declared grade not specified. With a mean corrected compressive strength of ${fmt1(c.mean)} MPa and a lowest individual value of ${fmt1(c.minIndividual)} MPa, the sample satisfies the IS 15658:2021 Table 3 requirements for Grade M ${g} (${reqText}).`);
+      } else {
+        notes.push(`Declared grade not specified. With a mean corrected compressive strength of ${fmt1(c.mean)} MPa and a lowest individual value of ${fmt1(c.minIndividual)} MPa, the sample does not satisfy the IS 15658:2021 Table 3 requirements for the lowest grade, M 30 (${reqText}).`);
+      }
+    } else {
+      notes.push('Declared grade not specified.');
+    }
+  }
+  if (sel.absorption) {
+    let line = 'As per IS 15658:2021 Table 3, water absorption shall not exceed 6 percent on average and 7 percent for any individual specimen.';
+    const a = absorptionForNotes;
+    if (a && !isNaN(a.mean) && !isNaN(a.maxIndividual)) {
+      const ok = Math.round(a.mean * 10) / 10 <= 6 && Math.round(a.maxIndividual * 10) / 10 <= 7;
+      line += ` Mean obtained ${fmt1(a.mean)} percent, highest individual ${fmt1(a.maxIndividual)} percent, so the sample ${verdict(ok)} this requirement.`;
+    }
+    notes.push(line);
+  }
+  if (sel.abrasion) {
+    const abr = abrasionForNotes;
+    const condWord = abr.condition === 'wet' ? 'wet/saturated' : 'dry';
+    let line = `As per IS 15658:2021 Table 3, abrasion resistance of ${condWord} specimens shall not exceed ${fmtIS(abr.limits.average)} mm³ per 5000 mm² on average and ${fmtIS(abr.limits.individual)} mm³ per 5000 mm² for any individual specimen.`;
+    if (!isNaN(abr.mean) && !isNaN(abr.maxIndividual)) {
+      line += ` Mean obtained ${fmtIS(abr.mean)}, highest individual ${fmtIS(abr.maxIndividual)} mm³ per 5000 mm², so the sample ${verdict(abr.meetsAverage && abr.meetsIndividual)} this requirement.`;
+    }
+    notes.push(line);
+  }
+  notes.forEach((n, i) => {
+    children.push(new Paragraph({
+      numbering: { reference: NOTES_NUMBERING, level: 0 },
+      spacing: { after: i === notes.length - 1 ? 300 : 0 },
+      children: [ run(n, { size: NOTES_FONT_SIZE }) ]
+    }));
+  });
+
+  // 10. Signatory table
+  const signatories = getSignatories();
+  if (signatories.length) {
+    const colWidth = Math.floor(100 / signatories.length);
+    const sigCells = signatories.map(sig => new TableCell({
+      width: { size: colWidth, type: WidthType.PERCENTAGE },
+      children: [
+        new Paragraph({ text: '' }), new Paragraph({ text: '' }),
+        new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.role, { bold: true }) ] }),
+        ...sig.names.map(name => new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(name) ] }))
+      ]
+    }));
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: noBorders, rows: [ new TableRow({ children: sigCells }) ] }));
+  }
+
+  const doc = new Document({
+    styles: { default: { document: { run: { size: FONT_SIZE } } } },
+    numbering: {
+      config: [
+        { reference: REF_NUMBERING, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 360, hanging: 360 } } } }] },
+        { reference: NOTES_NUMBERING, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }
+      ]
+    },
+    sections: [{
+      properties: { page: { margin: {
+        top: Math.round(4.4 * 566.929), bottom: Math.round(3.6 * 566.929), left: 1440, right: 1440
+      } } },
+      children
+    }]
+  });
+
+  return await docx.Packer.toBlob(doc);
+}
+</script>
+</body>
+</html>

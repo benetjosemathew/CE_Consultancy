@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stabilized Soil Block Test Certificate Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<style>
+  :root{
+    --ink:#1c2430; --muted:#5b6472; --line:#d8dde3; --bg:#f5f6f8;
+    --accent:#2a5d8f; --accent-light:#eaf1f8; --danger:#b3392c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family: "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--ink);
+    margin:0; padding:24px;
+  }
+  .wrap{ max-width:920px; margin:0 auto; }
+  h1{ font-size:1.4rem; margin-bottom:2px; }
+  .subtitle{ color:var(--muted); margin-top:0; margin-bottom:20px; font-size:.9rem; }
+  .site-nav{ font-size:.85rem; margin-bottom:14px; }
+  .site-nav a{ color:var(--accent); text-decoration:none; margin-right:14px; }
+  .site-nav a.current{ color:var(--ink); font-weight:600; text-decoration:none; cursor:default; }
+  .site-nav a:hover{ text-decoration:underline; }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .card h2{ font-size:1rem; margin:0 0 12px 0; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:8px;}
+  .row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px; }
+  .field{ flex:1 1 180px; display:flex; flex-direction:column; gap:4px; }
+  .field.narrow{ flex:0 0 90px; }
+  label{ font-size:.78rem; color:var(--muted); font-weight:600; }
+  input, select, textarea{
+    padding:7px 8px; border:1px solid var(--line); border-radius:5px; font-size:.9rem;
+    font-family:inherit; width:100%;
+  }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent-light); border-color:var(--accent); }
+  .hint{ font-size:.72rem; color:var(--muted); margin-top:2px; }
+  .preview-box{
+    background:var(--accent-light); border:1px solid var(--accent); border-radius:5px;
+    padding:8px 10px; font-family:monospace; font-size:.95rem; margin-top:6px;
+  }
+  table.specimen{ width:100%; border-collapse:collapse; margin-top:6px; }
+  table.specimen th, table.specimen td{
+    border:1px solid var(--line); padding:6px 8px; font-size:.85rem; text-align:center;
+  }
+  table.specimen th{ background:#f0f2f5; font-weight:600; font-size:.75rem; }
+  table.specimen input, table.specimen select{ text-align:center; padding:5px; }
+  table.specimen td.calc{ background:#fbfcfd; font-weight:600; color:var(--accent); }
+  .remove-specimen-btn{ padding:3px 8px; font-size:.8rem; border-color:var(--danger); color:var(--danger); }
+  .checkbox-row{ display:flex; gap:20px; flex-wrap:wrap; margin-bottom:6px; }
+  .checkbox-row label{ display:flex; align-items:center; gap:6px; font-size:.88rem; color:var(--ink); font-weight:400; }
+  .checkbox-row input[type="checkbox"]{ width:auto; }
+  #addressSearchWrap{ position:relative; }
+  #addressResults{
+    position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--line);
+    border-top:none; max-height:220px; overflow-y:auto; z-index:20; border-radius:0 0 6px 6px;
+    box-shadow:0 6px 12px rgba(0,0,0,.08);
+  }
+  .addr-option{ padding:8px 10px; cursor:pointer; font-size:.85rem; white-space:pre-line; border-bottom:1px solid var(--line); }
+  .addr-option:hover{ background:var(--accent-light); }
+  .addr-option .id{ color:var(--muted); font-size:.72rem; display:block; margin-bottom:2px; }
+  #selectedAddress{
+    white-space:pre-line; background:var(--accent-light); border:1px solid var(--accent);
+    border-radius:5px; padding:8px 10px; font-size:.85rem; margin-top:8px; display:none;
+  }
+  #selectedAddress button{ float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:.8rem; }
+  .add-address-form{ display:none; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+  .add-address-form textarea{ min-height:80px; }
+  button{
+    background:var(--accent); color:#fff; border:none; border-radius:6px; padding:9px 16px;
+    font-size:.88rem; cursor:pointer; font-weight:600;
+  }
+  button.secondary{ background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  #generateBtn{ font-size:1rem; padding:12px 22px; }
+  #statusMsg{ margin-top:10px; font-size:.85rem; }
+  #statusMsg.error{ color:var(--danger); }
+  #statusMsg.ok{ color:#1c7a3e; }
+  .config-status{ font-size:.78rem; color:var(--muted); margin-bottom:8px; }
+  .config-status.bad{ color:var(--danger); }
+  .sig-cols{ display:flex; gap:24px; flex-wrap:wrap; }
+  .sig-col{ flex:1 1 220px; min-width:200px; }
+  .sig-col > label{ display:block; margin-bottom:6px; }
+  .sig-name-row{ display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
+  .sig-name-row .field{ flex:1 1 auto; }
+  .sig-name-row .field.other-name{ flex:1 1 auto; margin-top:0; }
+  .remove-name-btn{ background:none; border:1px solid var(--line); color:var(--danger); border-radius:5px; padding:6px 9px; font-size:.8rem; line-height:1; cursor:pointer; flex:0 0 auto; }
+  .add-name-btn{ background:#fff; color:var(--accent); border:1px solid var(--accent); padding:5px 10px; font-size:.78rem; border-radius:5px; }
+  .advanced-toggle-row{ text-align:center; margin:18px 0 6px; }
+  .advanced-toggle-btn{
+    background:none; border:none; color:var(--muted); font-size:.75rem; font-weight:400;
+    cursor:pointer; padding:4px 8px; text-decoration:underline; text-decoration-style:dotted;
+  }
+  .advanced-toggle-btn:hover{ color:var(--accent); }
+  .advanced-section .card{ border-style:dashed; }
+  .backup-result{
+    padding:8px 10px; border:1px solid var(--line); border-radius:5px; margin-top:6px;
+    font-size:.82rem; cursor:pointer;
+  }
+  .backup-result:hover{ background:var(--accent-light); }
+  .result-line{ margin-top:8px; padding:7px 10px; border-radius:5px; font-size:.82rem; background:#f0f2f5; border:1px solid var(--line); }
+  .result-line.good{ background:#eef7f1; border-color:#9cc9ab; color:#1c5e33; }
+  .result-line.bad{ background:#fbecea; border-color:var(--danger); color:var(--danger); }
+  .prompt-scope{ background:var(--accent-light); border:1px solid var(--accent); border-radius:5px; padding:8px 10px; font-size:.82rem; margin:6px 0 4px; line-height:1.45; }
+  .prompt-scope.bad{ background:#fbecea; border-color:var(--danger); color:var(--danger); }
+  .site-footer{
+    margin-top:28px; padding:16px 0 8px; border-top:1px solid var(--line);
+    text-align:center; font-size:.75rem; color:var(--muted);
+  }
+  .site-footer p{ margin:2px 0; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="site-nav">
+    <a href="index.html">Cube Test</a>
+    <a href="brick.html">Brick Test</a>
+    <a href="paving.html">Paving Block Test</a>
+    <a href="soilblock.html" class="current">Soil Block Test</a>
+  </div>
+  <h1>Stabilized Soil Blocks (IS 1725:2023) — Report Generator</h1>
+  <p class="subtitle">Fills a lab test certificate .docx from your data. Prints on existing letterhead — no header/footer is added.</p>
+
+  <div class="card">
+    <h2>Backend status</h2>
+    <div id="configStatus" class="config-status">Loading configuration from Google Sheet…</div>
+  </div>
+
+  <div class="card">
+    <h2>1. Report Number &amp; Date</h2>
+    <div id="lastSubmittedInfo" class="hint" style="margin-bottom:10px;">Loading last submitted report…</div>
+    <div class="row">
+      <div class="field narrow">
+        <label for="reportNum">Report No.</label>
+        <input type="text" id="reportNum" placeholder="e.g. 3" inputmode="numeric">
+      </div>
+      <div class="field narrow">
+        <label for="reportMonth">Month</label>
+        <select id="reportMonth"></select>
+      </div>
+      <div class="field narrow">
+        <label for="reportYear">Year</label>
+        <input type="number" id="reportYear" min="2000" max="2100">
+      </div>
+      <div class="field">
+        <label for="reportDate">Report Date</label>
+        <input type="date" id="reportDate">
+      </div>
+    </div>
+    <div class="hint">Composed report number (numbering is continuous with the Cube reports — same lab, one sequence):</div>
+    <div class="preview-box" id="reportNumPreview">—</div>
+    <div class="row" style="margin-top:10px;">
+      <div class="field narrow">
+        <label for="pageNumber">Result Page No.</label>
+        <input type="text" id="pageNumber" placeholder="e.g. 42 or 12-A">
+      </div>
+    </div>
+    <div class="hint">The page number where this result is recorded in your register — letters and hyphens allowed (e.g. "12-A"). Stored in the report log; not printed on the certificate itself.</div>
+  </div>
+
+  <div class="card">
+    <h2>2. Addressee ("To:")</h2>
+    <div id="addressSearchWrap">
+      <label for="addressSearch">Search existing address book</label>
+      <input type="text" id="addressSearch" placeholder="Type a name, office, or ID…" autocomplete="off">
+      <div id="addressResults" style="display:none;"></div>
+    </div>
+    <div id="selectedAddress"></div>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="showAddAddressBtn">+ Add new address</button>
+    </div>
+    <div class="add-address-form" id="addAddressForm">
+      <label for="newAddressShort">Address Short (optional — leave blank to auto-generate)</label>
+      <input type="text" id="newAddressShort" placeholder="e.g. PDY-AE">
+      <label for="newAddressText" style="margin-top:8px;">New address (multi-line, e.g. name / designation / office)</label>
+      <textarea id="newAddressText" placeholder="The Assistant Engineer&#10;LID&amp;EW Division&#10;PDY"></textarea>
+      <div class="toolbar">
+        <button type="button" id="saveAddressBtn">Save &amp; use</button>
+        <button type="button" class="secondary" id="cancelAddAddressBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <h2>3. References (leave blank for "Not Specified")</h2>
+    <div class="row">
+      <div class="field">
+        <label for="workDesc">Work Description</label>
+        <input type="text" id="workDesc" placeholder="e.g. SO 212/25-26 construction of compound wall with stabilized soil blocks">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="aeLetterRef">AE Letter Reference</label>
+        <input type="text" id="aeLetterRef" placeholder="e.g. 41/AE/BLD/PDY/2025-26">
+      </div>
+      <div class="field narrow">
+        <label for="aeLetterDate">AE Letter Date</label>
+        <input type="date" id="aeLetterDate">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="agreementNumber">Agreement Number</label>
+        <input type="text" id="agreementNumber" placeholder="e.g. 41/AE/BLD/PDY/2025-26">
+      </div>
+      <div class="field narrow">
+        <label for="agreementDate">Agreement Date</label>
+        <input type="date" id="agreementDate">
+      </div>
+    </div>
+    <div class="hint">Two optional extra references (only appear in the document if filled in):</div>
+    <div class="row">
+      <div class="field">
+        <label for="extraRef1">Extra Reference 1 (optional)</label>
+        <input type="text" id="extraRef1" placeholder="Free text">
+      </div>
+      <div class="field">
+        <label for="extraRef2">Extra Reference 2 (optional)</label>
+        <input type="text" id="extraRef2" placeholder="Free text">
+      </div>
+    </div>
+    <div class="hint">The IS 1725:2023 reference (naming the clauses for the tests you select) is added automatically, plus IS 3495 (Parts 1 and 2) : 2019 when compressive strength or water absorption is selected.</div>
+  </div>
+
+  <div class="card">
+    <h2>4. Block Details</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="blockClass">Block Class</label>
+        <select id="blockClass">
+          <option value="">Not known</option>
+          <option value="3.5">3.5</option>
+          <option value="5.0">5.0</option>
+          <option value="7.5">7.5</option>
+          <option value="10.0">10.0</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="nominalSize">Nominal Size (L × W × H)</label>
+        <input type="text" id="nominalSize" list="sbSizes" value="290 x 140 x 90 mm">
+        <datalist id="sbSizes">
+          <option value="290 x 90 x 90 mm"></option>
+          <option value="290 x 140 x 90 mm"></option>
+          <option value="240 x 240 x 90 mm"></option>
+          <option value="190 x 90 x 90 mm"></option>
+          <option value="190 x 90 x 40 mm"></option>
+          <option value="305 x 143 x 100 mm"></option>
+          <option value="230 x 190 x 100 mm"></option>
+          <option value="230 x 105 x 75 mm"></option>
+          <option value="230 x 105 x 100 mm"></option>
+        </datalist>
+      </div>
+      <div class="field">
+        <label for="stabilizer">Stabilizer (optional)</label>
+        <input type="text" id="stabilizer" placeholder="e.g. Cement 8%">
+      </div>
+    </div>
+    <div class="hint">Class is the declared class from IS 1725:2023 Table 1 (average compressive strength, min). If not known, the certificate states the highest class the results satisfy. Sizes in the list are the modular (Cl. 7.2.1) and non-modular (Cl. 7.2.2) sizes of the standard.</div>
+    <div class="row" style="margin-top:10px;">
+      <div class="field">
+        <label for="sourceSupplier">Source / Supplier</label>
+        <input type="text" id="sourceSupplier" placeholder="e.g. Kanjirappally Earth Blocks">
+      </div>
+      <div class="field">
+        <label for="testingDate">Date of Testing *</label>
+        <input type="date" id="testingDate">
+      </div>
+      <div class="field">
+        <label for="receiptDate">Date of Receipt of Specimen</label>
+        <input type="date" id="receiptDate">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5. Choice of Tests (at least one required)</h2>
+    <div class="checkbox-row">
+      <label><input type="checkbox" id="testDimensions" checked> Visual Inspection &amp; Dimensions</label>
+      <label><input type="checkbox" id="testDensity" checked> Dry Density</label>
+      <label><input type="checkbox" id="testCompressive" checked> Wet Compressive Strength</label>
+      <label><input type="checkbox" id="testAbsorption" checked> Water Absorption</label>
+      <label><input type="checkbox" id="testExpansion"> Linear Expansion on Saturation</label>
+      <label><input type="checkbox" id="testWeathering"> Weathering</label>
+    </div>
+    <div class="hint">IS 1725:2023 Cl. 9: dry density, linear expansion and weathering are done on three blocks each, taken from blocks that have passed the visual and dimensional checks.</div>
+  </div>
+
+  <div class="card" id="dimensionCard">
+    <h2>6A. Visual Inspection &amp; Dimensions (IS 1725:2023 Cl. 5.2, 7, Annex B)</h2>
+    <div class="row">
+      <div class="field narrow">
+        <label for="declaredLength">Declared Length (mm)</label>
+        <input type="number" step="any" id="declaredLength" placeholder="from Nominal Size">
+      </div>
+      <div class="field narrow">
+        <label for="declaredWidth">Declared Width (mm)</label>
+        <input type="number" step="any" id="declaredWidth" placeholder="from Nominal Size">
+      </div>
+      <div class="field narrow">
+        <label for="declaredHeight">Declared Height (mm)</label>
+        <input type="number" step="any" id="declaredHeight" placeholder="from Nominal Size">
+      </div>
+      <div class="field narrow">
+        <label for="visualDefects">Blocks with Visual Defects *</label>
+        <input type="number" min="0" step="1" id="visualDefects" value="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="visualRemarks">Visual defects observed (optional, printed if filled)</label>
+        <input type="text" id="visualRemarks" placeholder="e.g. crack across bed face of block 4">
+      </div>
+    </div>
+    <div class="hint">Visual (Cl. 5.2): blocks sound, free from cracks and nodules of free lime; faces flat and rectangular, opposite faces parallel, angles square. Minor chipping from handling during delivery is not a reason for rejection, so do not count it. Dimensions (Annex B): steel scale or tape in 1 mm divisions. Length on the longitudinal centre line of each face, width across the top and bottom bearing surfaces at mid-length, height on all four vertical faces at mid-length. Enter each block's mean, to the nearest 0.5 mm. Tolerance ± 2 mm (Cl. 7.3). Number of blocks as per IS 5454.</div>
+    <table class="specimen" id="dimensionTable">
+      <thead>
+        <tr><th>Sl No</th><th>Length (mm)</th><th>Width (mm)</th><th>Height (mm)</th><th>Within ± 2 mm</th><th></th></tr>
+      </thead>
+      <tbody id="dimensionBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addDimensionBtn">+ Add block</button>
+      <span class="hint" id="dimensionCountHint"></span>
+    </div>
+    <div id="dimensionSummary" class="result-line">—</div>
+  </div>
+
+  <div class="card" id="densityCard">
+    <h2>6B. Dry Density (IS 1725:2023 Cl. 8.1, Annex C)</h2>
+    <div class="hint">Dry the blocks at 100 ± 5 °C to constant mass (two weighings 2 h apart differ by not more than 0.05 %). Measure the dried block to the nearest 1 mm and weigh to the nearest 2 g. Dry density = mass × 10⁹ / volume (kg/m³). Average of 3 blocks not less than 1750 kg/m³, reported to the nearest 1 kg/m³.</div>
+    <table class="specimen" id="densityTable">
+      <thead>
+        <tr><th>Sl No</th><th>Length (mm)</th><th>Width (mm)</th><th>Height (mm)</th><th>Dry Mass (kg)</th><th>Dry Density (kg/m³)</th><th>Average (kg/m³)</th><th></th></tr>
+      </thead>
+      <tbody id="densityBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addDensityBtn">+ Add specimen</button>
+      <span class="hint" id="densityCountHint"></span>
+    </div>
+    <div id="densitySummary" class="result-line">—</div>
+  </div>
+
+  <div class="card" id="compressiveCard">
+    <h2>6C. Wet Compressive Strength (IS 1725:2023 Cl. 8.2; IS 3495 (Part 1) : 2019)</h2>
+    <div class="hint">Blocks immersed in water at 27 ± 2 °C for 24 h, surplus water drained, frog and any voids in the bed faces filled with cement-sand mortar, then tested between 3 mm plywood sheets at 7 ± 1 N/mm²/min (IS 3495 (Part 1), 4.1). Strength = max load / bed area. Average reported to 0.1 N/mm². No individual block may be more than 15 % below the class value (Cl. 8.2.1.1). If one block fails this, ignore it, test two more, and the set of four must comply (Cl. 8.2.1.2); add the two rows and tick "Ignored" on the failed one.</div>
+    <table class="specimen" id="compressiveTable">
+      <thead>
+        <tr>
+          <th>Sl No</th><th>Length (mm)</th><th>Width (mm)</th><th>Bed Area (sq.mm)</th>
+          <th>Max Load (kN)</th><th>Strength (N/mm²)</th><th>Ignored (8.2.1.2)</th><th>Mean (N/mm²)</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="compressiveBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addCompressiveBtn">+ Add specimen</button>
+      <span class="hint" id="compressiveCountHint"></span>
+    </div>
+    <div id="compressiveSummary" class="result-line">—</div>
+  </div>
+
+  <div class="card" id="absorptionCard">
+    <h2>6D. Water Absorption (IS 1725:2023 Cl. 8.3; IS 3495 (Part 2) : 2019, 4.1)</h2>
+    <div class="hint">24 h cold water immersion. Average water absorption not more than 18 % by mass.</div>
+    <table class="specimen" id="absorptionTable">
+      <thead>
+        <tr><th>Sl No</th><th>Dry Weight (kg)</th><th>Wet Weight (kg)</th><th>Absorption (%)</th><th>Mean Absorption (%)</th><th></th></tr>
+      </thead>
+      <tbody id="absorptionBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addAbsorptionBtn">+ Add specimen</button>
+      <span class="hint" id="absorptionCountHint"></span>
+    </div>
+    <div id="absorptionSummary" class="result-line">—</div>
+  </div>
+
+  <div class="card" id="expansionCard">
+    <h2>6E. Linear Expansion on Saturation (IS 1725:2023 Cl. 8.4, Annex D)</h2>
+    <div class="hint">Cure 28 days (IS 17165, 6.8), oven dry at 60 ± 5 °C to constant mass and cool. Measure the longest dimension with a vernier (0.1 mm) as the initial length. Take dial gauge readings at the metal strip, then turn the block 90° and read again; repeat after 24 h soaking. Expansion = mean final reading − mean initial reading. Percentage = expansion / initial length × 100. Average of 3 blocks not more than 0.10 %, reported to 0.01 %.</div>
+    <table class="specimen" id="expansionTable">
+      <thead>
+        <tr>
+          <th>Sl No</th><th>Initial Length L<sub>i</sub> (mm)</th>
+          <th>Initial Dial Reading 1 (mm)</th><th>Initial Dial Reading 2 (mm)</th>
+          <th>Final Dial Reading 1 (mm)</th><th>Final Dial Reading 2 (mm)</th>
+          <th>Expansion L<sub>e</sub> (mm)</th><th>Expansion (%)</th><th>Average (%)</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="expansionBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addExpansionBtn">+ Add specimen</button>
+      <span class="hint" id="expansionCountHint"></span>
+    </div>
+    <div id="expansionSummary" class="result-line">—</div>
+  </div>
+
+  <div class="card" id="weatheringCard">
+    <h2>6F. Weathering (IS 1725:2023 Cl. 8.5, Annex E)</h2>
+    <div class="hint">Dry at 60 ± 5 °C to constant mass (initial mass). Each cycle: soak 5 h, dry at 70 ± 5 °C for 42 h, brush all six faces twice with the wire brush at about 15 N. After 12 cycles dry at 60 ± 5 °C to constant mass (final mass). Mass loss = (initial − final) / initial × 100. Average of 3 blocks not more than 3 %, reported to 0.1 %.</div>
+    <table class="specimen" id="weatheringTable">
+      <thead>
+        <tr><th>Sl No</th><th>Initial Mass W<sub>i</sub> (g)</th><th>Final Mass W<sub>f</sub> after 12 cycles (g)</th><th>Mass Loss (%)</th><th>Average (%)</th><th></th></tr>
+      </thead>
+      <tbody id="weatheringBody"></tbody>
+    </table>
+    <div class="toolbar">
+      <button type="button" class="secondary" id="addWeatheringBtn">+ Add specimen</button>
+      <span class="hint" id="weatheringCountHint"></span>
+    </div>
+    <div id="weatheringSummary" class="result-line">—</div>
+  </div>
+
+  <div class="card">
+    <h2>7. Signatories</h2>
+    <p class="hint">Column headings ("Test performed by" / "Investigators" / "HoD") are fixed; names are pulled from the "Names" tab in your sheet. Pick "Other" on any dropdown to type a name not yet in the sheet. Use "+ Add name" to add more than one name under "Test performed by" or "Investigators".</p>
+    <div id="signatoryFields"></div>
+  </div>
+
+  <div class="card">
+    <h2>8. Generate</h2>
+    <div class="toolbar">
+      <button id="generateBtn">Generate Report (.docx)</button>
+      <button type="button" class="secondary" id="newReportBtn" style="display:none;">Start New Report</button>
+    </div>
+    <div id="statusMsg"></div>
+  </div>
+
+  <div class="advanced-toggle-row">
+    <button type="button" id="advancedToggleBtn" class="advanced-toggle-btn">+ Advanced</button>
+  </div>
+
+  <div id="advancedSection" class="advanced-section" style="display:none;">
+
+    <div class="card">
+      <h2>Auto-fill from Engineer Letter (optional, LLM-assisted)</h2>
+      <p class="hint">If you have a letter from the Assistant Engineer as a PDF: copy the prompt below, paste it into an LLM chat along with the PDF attached, then paste the JSON it returns here.</p>
+      <div class="toolbar">
+        <button type="button" class="secondary" id="copyPromptBtn">Copy extraction prompt</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:1 1 100%;">
+          <label for="llmJsonInput">Paste returned JSON here</label>
+          <textarea id="llmJsonInput" style="min-height:100px;" placeholder='{ "workDescription": "...", "blockClass": "...", ... }'></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="applyJsonBtn">Apply JSON to form</button>
+      </div>
+      <div id="jsonApplyStatus" class="hint"></div>
+    </div>
+
+    <div class="card">
+      <h2>Auto-fill Specimen Tables from Log Book Photo (LLM-assisted)</h2>
+      <p class="hint">Copy the prompt below, paste it into an LLM chat along with photo(s) of the log book page(s), then paste the JSON it returns here. The prompt is built from the tests ticked in section 5, so set the ticks there <strong>before</strong> copying.</p>
+      <div id="specimenPromptScope" class="prompt-scope"></div>
+      <div class="toolbar">
+        <button type="button" class="secondary" id="copySpecimenPromptBtn">Copy extraction prompt</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:1 1 100%;">
+          <label for="specimenJsonInput">Paste returned JSON here</label>
+          <textarea id="specimenJsonInput" style="min-height:100px;" placeholder='{ "dimensions": [...], "density": [...], "compressive": [...], "absorption": [...], "expansion": [...], "weathering": [...] }'></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="applySpecimenJsonBtn">Apply JSON to specimen tables</button>
+      </div>
+      <div id="specimenJsonApplyStatus" class="hint"></div>
+    </div>
+
+        <div class="card">
+      <h2>Load a Previous Report</h2>
+      <p class="hint">Search by Report No. or Page Number to pull a past report of this same type back into this form (from the JSON snapshot saved alongside the report log). Review everything before regenerating — this overwrites what's currently in the form.</p>
+      <div class="row">
+        <div class="field">
+          <label for="backupSearchInput">Search Report No. / Page No.</label>
+          <input type="text" id="backupSearchInput" placeholder="e.g. CON/CE/SCL/003032026 or 12-A">
+        </div>
+        <div class="field narrow" style="justify-content:flex-end;">
+          <button type="button" id="backupSearchBtn">Search</button>
+        </div>
+      </div>
+      <div id="backupResults"></div>
+      <div id="backupApplyStatus" class="hint"></div>
+    </div>
+
+
+  </div>
+</div>
+
+  <footer class="site-footer">
+    <p>Developed by Dept. of Civil Engineering, Amal Jyothi College of Engineering.</p>
+    <p>For queries, contact Mr. Bennet Jose Mathew.</p>
+    <p id="footerReportCount"></p>
+  </footer>
+
+
+<script>
+/* =========================================================================
+   Page identity — must be set before the shared script include below
+   ========================================================================= */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKj68-aD6FZQfuBHSHKGQ1U_jB7idm7iR6VtQww7w74PzS--tAuSGCfl6ylbt2d6Yb/exec';
+const REPORT_TYPE = 'Soil Block';
+const MIN_SPECIMENS = 1;
+const MAX_SPECIMENS = 20;
+const DEFAULT_INITIAL_SPECIMENS = 3;
+
+/* =========================================================================
+   Shared state
+   ========================================================================= */
+let CONFIG = {
+  ReportPrefix: 'CON/CE/SCL/',
+};
+// Signatory column labels are fixed (not sourced from the remote Config sheet,
+// which may still have old-scheme role labels from before the 3-column layout).
+const SIG_LABELS = { col1: 'Test performed by', col2: 'Investigators', hod: 'HoD' };
+let NAMES = { general: [], testPerformedBy: [], hod: [] };
+let selectedAddress = null; // { addressId, address }
+let configLoaded = false;
+
+/* =========================================================================
+   Small utilities
+   ========================================================================= */
+function debounce(fn, ms){
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function escapeHtml(str){
+  // Uses \u003c / \u003e instead of literal < > characters in this source —
+  // literal angle brackets here have been known to get mangled into the text
+  // "&lt;"/"&gt;" if this file is ever copied from a rendered HTML view
+  // instead of raw/plain text, which breaks this regex silently.
+  var lt = '\u003c', gt = '\u003e';
+  var map = { '&': '&amp;', '"': '&quot;', "'": '&#39;' };
+  map[lt] = '&lt;';
+  map[gt] = '&gt;';
+  var pattern = new RegExp('[&' + lt + gt + '"\']', 'g');
+  return String(str).replace(pattern, function(c){ return map[c]; });
+}
+
+function fmtDate(isoStr){
+  if (!isoStr) return null;
+  const [y, m, d] = isoStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function orNotSpecified(val){
+  return (val && val.toString().trim()) ? val.toString().trim() : 'Not Specified';
+}
+
+function normalizeDateStr(v){
+  if (v === null || v === undefined) return null;
+  const s = v.toString().trim();
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // already ISO
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/); // DD/MM/YYYY or DD-MM-YYYY
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  return null; // unrecognized — caller should flag it and leave the field untouched
+}
+
+function fallbackCopy(text, onDone){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    onDone();
+  } catch (e) {
+    alert('Could not copy automatically. Here is the text to copy manually:\n\n' + text);
+  }
+  document.body.removeChild(ta);
+}
+
+function copyToClipboard(text, onDone){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onDone).catch(() => fallbackCopy(text, onDone));
+  } else {
+    fallbackCopy(text, onDone);
+  }
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function sanitizeForFilename(s){
+  return (s || '').replace(/[\\/:*?"<>|]/g, '_');
+}
+
+/* =========================================================================
+   Report number & date
+   ========================================================================= */
+function populateMonthYear(){
+  const monthSel = document.getElementById('reportMonth');
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const today = new Date();
+  monthNames.forEach((name, idx) => {
+    const opt = document.createElement('option');
+    opt.value = String(idx + 1).padStart(2, '0');
+    opt.textContent = `${opt.value} — ${name}`;
+    monthSel.appendChild(opt);
+  });
+  monthSel.value = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('reportYear').value = today.getFullYear();
+  document.getElementById('reportDate').value = today.toISOString().slice(0, 10);
+}
+
+function composedReportNumber(){
+  const numRaw = document.getElementById('reportNum').value.trim();
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value.trim();
+  const prefix = CONFIG.ReportPrefix || '';
+  const numPadded = numRaw.padStart(3, '0').slice(-3);
+  return `${prefix}${numPadded}${month}${year}`;
+}
+
+function updateReportNumberPreview(){
+  const numRaw = document.getElementById('reportNum').value.trim();
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value.trim();
+  const preview = document.getElementById('reportNumPreview');
+  if (!preview) return;
+  if (!numRaw || !month || !year || year.length !== 4) {
+    preview.textContent = '—';
+    return;
+  }
+  preview.textContent = composedReportNumber();
+}
+
+/* =========================================================================
+   Config/Names/last-submitted/count — one combined ?action=init request
+   ========================================================================= */
+async function loadConfig(){
+  const statusEl = document.getElementById('configStatus');
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    statusEl.textContent = 'Apps Script URL not set. Edit APPS_SCRIPT_URL near the top of this file. Using built-in defaults for now.';
+    statusEl.classList.add('bad');
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+    return;
+  }
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=init&type=${encodeURIComponent(REPORT_TYPE)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Unknown error loading init data');
+
+    CONFIG = Object.assign({}, CONFIG, data.config);
+    NAMES = {
+      general: (data.names && data.names.general) || [],
+      testPerformedBy: (data.names && data.names.testPerformedBy) || [],
+      hod: (data.names && data.names.hod) || []
+    };
+    configLoaded = true;
+
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+    updateReportNumberPreview();
+    renderLastSubmittedInfo(data.lastReport);
+    renderFooterReportCount(data.reportCount);
+
+    statusEl.textContent = `Configuration loaded. Prefix "${CONFIG.ReportPrefix}". Names: ${NAMES.general.length} general, ${NAMES.testPerformedBy.length} test-performed-by, ${NAMES.hod.length} HoD.`;
+    statusEl.classList.remove('bad');
+  } catch (err) {
+    statusEl.textContent = `Could not reach Apps Script backend (${err.message}). Using built-in defaults — you can still generate a report, but check the prefix/role labels are correct before relying on them.`;
+    statusEl.classList.add('bad');
+    if (typeof onConfigLoaded === 'function') onConfigLoaded();
+    renderSignatoryFields();
+  }
+}
+
+function renderLastSubmittedInfo(lastReport){
+  const el = document.getElementById('lastSubmittedInfo');
+  if (!el) return;
+  if (!lastReport || !lastReport.reportNo) {
+    el.textContent = `No ${REPORT_TYPE} reports submitted yet.`;
+    return;
+  }
+  el.textContent = `Last submitted (${REPORT_TYPE}) — Page No: ${lastReport.pageNumber || '—'} · Report No: ${lastReport.reportNo} · Investigator 1: ${lastReport.investigator1 || '—'}`;
+}
+
+function renderFooterReportCount(count){
+  const el = document.getElementById('footerReportCount');
+  if (!el) return;
+  if (count === undefined || count === null) {
+    el.textContent = '';
+    return;
+  }
+  el.textContent = `${count} report${count === 1 ? '' : 's'} generated so far (all test types).`;
+}
+
+/* =========================================================================
+   Signatories — 3 columns: "Test performed by" and "Investigators" each
+   support multiple names (use "+ Add name" / the "✕" button); HoD is a
+   single name. Names for each column come from the Names pools loaded
+   from Config. Column labels are fixed via SIG_LABELS (not read from the
+   remote Config sheet — see note above CONFIG).
+   ========================================================================= */
+let sigNameCounts = { 1: 2, 2: 2 }; // picker rows currently shown for col 1 / col 2 (HoD is always exactly 1)
+
+function namesForCol(col){
+  if (col === 1) return NAMES.testPerformedBy;
+  if (col === 'hod') return NAMES.hod;
+  return NAMES.general; // col 2 (Investigators) shares the general Name pool
+}
+
+function sigFieldIds(col, idx){
+  if (col === 'hod') return { sel: 'sigSelectHod', wrap: 'sigOtherWrapHod', other: 'sigOtherHod' };
+  return { sel: `sigSelect${col}_${idx}`, wrap: `sigOtherWrap${col}_${idx}`, other: `sigOther${col}_${idx}` };
+}
+
+function sigPickerHtml(col, idx, sourceNames){
+  const ids = sigFieldIds(col, idx);
+  const showRemove = (col !== 'hod') && idx > 0;
+  return `
+    <div class="sig-name-row">
+      <div class="field">
+        <select id="${ids.sel}">
+          <option value="">-- Select --</option>
+          ${sourceNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
+          <option value="__other__">Other (type manually)</option>
+        </select>
+      </div>
+      <div class="field other-name" id="${ids.wrap}" style="display:none;">
+        <input type="text" id="${ids.other}" placeholder="Type name">
+      </div>
+      ${showRemove ? `<button type="button" class="remove-name-btn" data-col="${col}" data-idx="${idx}" title="Remove this name">✕</button>` : ''}
+    </div>
+  `;
+}
+
+function wireSigPicker(col, idx){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select) return;
+  select.addEventListener('change', (e) => {
+    document.getElementById(ids.wrap).style.display = (e.target.value === '__other__') ? 'flex' : 'none';
+  });
+}
+
+function readSigPickerValue(col, idx){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select) return '';
+  if (select.value === '__other__') {
+    const other = document.getElementById(ids.other);
+    return other ? other.value.trim() : '';
+  }
+  return select.value.trim();
+}
+
+function setSigPickerValue(col, idx, value){
+  const ids = sigFieldIds(col, idx);
+  const select = document.getElementById(ids.sel);
+  if (!select || !value) return;
+  const hasOption = Array.from(select.options).some(o => o.value === value);
+  const wrap = document.getElementById(ids.wrap);
+  if (hasOption) {
+    select.value = value;
+    if (wrap) wrap.style.display = 'none';
+  } else {
+    select.value = '__other__';
+    if (wrap) wrap.style.display = 'flex';
+    const other = document.getElementById(ids.other);
+    if (other) other.value = value;
+  }
+}
+
+function captureSigValues(){
+  const col1 = [];
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) col1.push(readSigPickerValue(1, idx));
+  const col2 = [];
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) col2.push(readSigPickerValue(2, idx));
+  return { col1, col2, hod: readSigPickerValue('hod', 0) };
+}
+
+function renderSignatoryFields(prevValues){
+  const container = document.getElementById('signatoryFields');
+  if (!container) return;
+  const label1 = SIG_LABELS.col1;
+  const label2 = SIG_LABELS.col2;
+  const label3 = SIG_LABELS.hod;
+
+  let col1Rows = '';
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) col1Rows += sigPickerHtml(1, idx, namesForCol(1));
+  let col2Rows = '';
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) col2Rows += sigPickerHtml(2, idx, namesForCol(2));
+  const hodRow = sigPickerHtml('hod', 0, namesForCol('hod'));
+
+  container.innerHTML = `
+    <div class="sig-cols">
+      <div class="sig-col">
+        <label>${escapeHtml(label1)} *</label>
+        <div id="sigRows1">${col1Rows}</div>
+        <button type="button" class="add-name-btn" data-col="1">+ Add name</button>
+      </div>
+      <div class="sig-col">
+        <label>${escapeHtml(label2)}</label>
+        <div id="sigRows2">${col2Rows}</div>
+        <button type="button" class="add-name-btn" data-col="2">+ Add name</button>
+      </div>
+      <div class="sig-col">
+        <label>${escapeHtml(label3)}</label>
+        <div id="sigRowsHod">${hodRow}</div>
+      </div>
+    </div>
+  `;
+
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) wireSigPicker(1, idx);
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) wireSigPicker(2, idx);
+  wireSigPicker('hod', 0);
+
+  container.querySelectorAll('.add-name-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = Number(btn.getAttribute('data-col'));
+      const vals = captureSigValues();
+      sigNameCounts[col]++;
+      renderSignatoryFields(vals);
+    });
+  });
+  container.querySelectorAll('.remove-name-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = Number(btn.getAttribute('data-col'));
+      const idx = Number(btn.getAttribute('data-idx'));
+      const vals = captureSigValues();
+      (col === 1 ? vals.col1 : vals.col2).splice(idx, 1);
+      sigNameCounts[col]--;
+      renderSignatoryFields(vals);
+    });
+  });
+
+  if (prevValues) {
+    prevValues.col1.forEach((v, idx) => setSigPickerValue(1, idx, v));
+    prevValues.col2.forEach((v, idx) => setSigPickerValue(2, idx, v));
+    setSigPickerValue('hod', 0, prevValues.hod);
+  } else {
+    // auto-fill when a pool has exactly one name
+    if (namesForCol(1).length === 1) setSigPickerValue(1, 0, namesForCol(1)[0]);
+    if (namesForCol('hod').length === 1) setSigPickerValue('hod', 0, namesForCol('hod')[0]);
+  }
+}
+
+function getSignatories(){
+  // [{ role, names: [...] }], only columns with at least one filled name — used for the docx signatory table.
+  const result = [];
+  const col1Names = [];
+  for (let idx = 0; idx < sigNameCounts[1]; idx++) { const v = readSigPickerValue(1, idx); if (v) col1Names.push(v); }
+  if (col1Names.length) result.push({ role: SIG_LABELS.col1, names: col1Names });
+
+  const col2Names = [];
+  for (let idx = 0; idx < sigNameCounts[2]; idx++) { const v = readSigPickerValue(2, idx); if (v) col2Names.push(v); }
+  if (col2Names.length) result.push({ role: SIG_LABELS.col2, names: col2Names });
+
+  const hodName = readSigPickerValue('hod', 0);
+  if (hodName) result.push({ role: SIG_LABELS.hod, names: [hodName] });
+
+  return result;
+}
+
+function getSignatoryNamesBySlot(){
+  // { testPerformedBy: [...], investigators: [...], hod: name or '' } — used for
+  // ReportLog columns (name only, no role) and snapshots.
+  const vals = captureSigValues();
+  return {
+    testPerformedBy: vals.col1.filter(Boolean),
+    investigators: vals.col2.filter(Boolean),
+    hod: vals.hod
+  };
+}
+
+/* =========================================================================
+   Address widget
+   ========================================================================= */
+async function onAddressSearch(){
+  const q = document.getElementById('addressSearch').value.trim();
+  const resultsEl = document.getElementById('addressResults');
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    resultsEl.innerHTML = '<div class="addr-option">Apps Script URL not configured.</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=search&q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Search failed');
+    renderAddressResults(data.results);
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="addr-option">Search error: ${escapeHtml(err.message)}</div>`;
+    resultsEl.style.display = 'block';
+  }
+}
+
+function renderAddressResults(results){
+  const resultsEl = document.getElementById('addressResults');
+  if (!results.length) {
+    resultsEl.innerHTML = '<div class="addr-option">No matches. Try "+ Add new address" below.</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+  resultsEl.innerHTML = results.map(r => `
+    <div class="addr-option" data-id="${escapeHtml(r.addressId)}" data-address="${escapeHtml(r.address)}">
+      <span class="id">${escapeHtml(r.addressId)}</span>${escapeHtml(r.address)}
+    </div>
+  `).join('');
+  resultsEl.style.display = 'block';
+  resultsEl.querySelectorAll('.addr-option[data-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      selectAddress({ addressId: el.getAttribute('data-id'), address: el.getAttribute('data-address') });
+      resultsEl.style.display = 'none';
+    });
+  });
+}
+
+function selectAddress(addr){
+  selectedAddress = addr;
+  document.getElementById('addressSearch').value = '';
+  const box = document.getElementById('selectedAddress');
+  box.style.display = 'block';
+  box.innerHTML = `<button type="button" onclick="clearSelectedAddress()">✕ change</button>${escapeHtml(addr.address)}`;
+}
+
+function clearSelectedAddress(){
+  selectedAddress = null;
+  document.getElementById('selectedAddress').style.display = 'none';
+}
+window.clearSelectedAddress = clearSelectedAddress;
+
+async function onSaveNewAddress(){
+  const text = document.getElementById('newAddressText').value.trim();
+  const shortId = document.getElementById('newAddressShort').value.trim();
+  if (!text) { alert('Enter an address first.'); return; }
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) {
+    alert('Apps Script URL not configured — cannot save to the sheet.');
+    return;
+  }
+  const btn = document.getElementById('saveAddressBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=addAddress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight
+      body: JSON.stringify({ address: text, addressId: shortId })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Save failed');
+    selectAddress({ addressId: data.addressId, address: data.address });
+    document.getElementById('addAddressForm').style.display = 'none';
+    document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
+  } catch (err) {
+    alert(`Could not save address: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save & use';
+  }
+}
+
+/* =========================================================================
+   Advanced section toggle (hidden by default on every page)
+   ========================================================================= */
+function toggleAdvancedSection(){
+  const section = document.getElementById('advancedSection');
+  const btn = document.getElementById('advancedToggleBtn');
+  const isHidden = section.style.display === 'none';
+  section.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '\u2212 Advanced' : '+ Advanced';
+}
+
+/* =========================================================================
+   Generic specimen-table controller — used for the cube's one table and
+   each of the soil block page's six test tables
+   ========================================================================= */
+function createSpecimenTable(opts){
+  const min = opts.min || 1;
+  const max = opts.max || 20;
+  const body = document.getElementById(opts.bodyId);
+  const addBtn = opts.addBtnId ? document.getElementById(opts.addBtnId) : null;
+  const hintEl = opts.countHintId ? document.getElementById(opts.countHintId) : null;
+
+  function renumber(){
+    Array.from(body.querySelectorAll('tr')).forEach((row, i) => {
+      const slno = row.querySelector('.slno');
+      if (slno) slno.textContent = i + 1;
+    });
+  }
+
+  function updateControls(){
+    const count = body.querySelectorAll('tr').length;
+    if (addBtn) addBtn.disabled = count >= max;
+    if (hintEl) hintEl.textContent = `${count} row${count === 1 ? '' : 's'} (min ${min}, max ${max})`;
+    body.querySelectorAll('.remove-specimen-btn').forEach(btn => { btn.disabled = count <= min; });
+  }
+
+  function makeRow(rowNumber){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="slno"></td>${opts.buildRowCells(rowNumber)}<td><button type="button" class="secondary remove-specimen-btn" title="Remove row">\u2715</button></td>`;
+    tr.querySelector('.remove-specimen-btn').addEventListener('click', () => removeRow(tr));
+    return tr;
+  }
+
+  function addRow(){
+    const count = body.querySelectorAll('tr').length;
+    if (count >= max) return;
+    body.appendChild(makeRow(count + 1));
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function removeRow(tr){
+    const count = body.querySelectorAll('tr').length;
+    if (count <= min) return;
+    tr.remove();
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function setCount(n){
+    const clamped = Math.max(min, Math.min(max, n));
+    while (body.querySelectorAll('tr').length < clamped) addRow();
+    while (body.querySelectorAll('tr').length > clamped) {
+      const rows = body.querySelectorAll('tr');
+      removeRow(rows[rows.length - 1]);
+    }
+    return clamped;
+  }
+
+  function rebuild(initialCount){
+    body.innerHTML = '';
+    const n = initialCount || min;
+    for (let i = 0; i < n; i++) body.appendChild(makeRow(i + 1));
+    renumber();
+    updateControls();
+    if (opts.onChange) opts.onChange();
+  }
+
+  function rows(){ return Array.from(body.querySelectorAll('tr')); }
+
+  if (addBtn) addBtn.addEventListener('click', addRow);
+
+  return { addRow, removeRow, setCount, rebuild, rows, renumber, updateControls };
+}
+
+/* =========================================================================
+   Form snapshot — common fields. Pages implement collectPageSnapshot() /
+   applyPageSnapshot(snapshot) for whatever's specific to that report type.
+   ========================================================================= */
+function collectFormSnapshot(){
+  const common = {
+    reportNum: document.getElementById('reportNum').value,
+    reportMonth: document.getElementById('reportMonth').value,
+    reportYear: document.getElementById('reportYear').value,
+    reportDate: document.getElementById('reportDate').value,
+    pageNumber: document.getElementById('pageNumber').value,
+    selectedAddress: selectedAddress ? { addressId: selectedAddress.addressId, address: selectedAddress.address } : null,
+    signatories: getSignatoryNamesBySlot()
+  };
+  const pageSpecific = (typeof collectPageSnapshot === 'function') ? collectPageSnapshot() : {};
+  return Object.assign({}, common, pageSpecific);
+}
+
+function applyFormSnapshot(snapshot){
+  if (!snapshot) return;
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+
+  setVal('reportNum', snapshot.reportNum);
+  setVal('reportMonth', snapshot.reportMonth);
+  setVal('reportYear', snapshot.reportYear);
+  setVal('reportDate', snapshot.reportDate);
+  setVal('pageNumber', snapshot.pageNumber);
+  updateReportNumberPreview();
+
+  if (snapshot.selectedAddress) {
+    selectAddress(snapshot.selectedAddress); // stored verbatim, independent of later Addresses-sheet edits
+  }
+
+  if (snapshot.signatories) {
+    const s = snapshot.signatories;
+    let col1, col2, hod;
+    if (s.testPerformedBy || s.investigators || s.hod) {
+      // current (3-column) format
+      col1 = s.testPerformedBy || [];
+      col2 = s.investigators || [];
+      hod = s.hod || '';
+    } else {
+      // legacy format saved before the 3-column layout
+      // (slot1: Test performed by, slot2/slot3: Investigator 1/2, slot4: HoD)
+      col1 = s.slot1 ? [s.slot1] : [];
+      col2 = [s.slot2, s.slot3].filter(Boolean);
+      hod = s.slot4 || '';
+    }
+    sigNameCounts[1] = Math.max(col1.length, 1);
+    sigNameCounts[2] = Math.max(col2.length, 1);
+    renderSignatoryFields({ col1: col1.length ? col1 : [''], col2: col2.length ? col2 : [''], hod });
+  }
+
+  if (typeof applyPageSnapshot === 'function') applyPageSnapshot(snapshot);
+}
+
+/* =========================================================================
+   Load a Previous Report (search + apply), filtered to this page's REPORT_TYPE
+   ========================================================================= */
+function onBackupSearch(){
+  const q = document.getElementById('backupSearchInput').value.trim();
+  const resultsEl = document.getElementById('backupResults');
+  const statusEl = document.getElementById('backupApplyStatus');
+  statusEl.textContent = '';
+  statusEl.classList.remove('error');
+  if (!q) {
+    resultsEl.innerHTML = '';
+    statusEl.textContent = 'Type a report number or page number to search.';
+    return;
+  }
+  resultsEl.innerHTML = '<div class="hint">Searching…</div>';
+  fetch(`${APPS_SCRIPT_URL}?action=searchLog&q=${encodeURIComponent(q)}&type=${encodeURIComponent(REPORT_TYPE)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) throw new Error(data.error || 'Search failed');
+      renderBackupResults(data.results);
+    })
+    .catch(err => {
+      resultsEl.innerHTML = '';
+      statusEl.textContent = `Search error: ${err.message}`;
+      statusEl.classList.add('error');
+    });
+}
+
+function renderBackupResults(results){
+  const resultsEl = document.getElementById('backupResults');
+  if (!results.length) {
+    resultsEl.innerHTML = `<div class="hint">No matching ${REPORT_TYPE} reports found.</div>`;
+    return;
+  }
+  resultsEl.innerHTML = results.map(r => `
+    <div class="backup-result" data-reportno="${escapeHtml(r.reportNo)}">
+      <strong>${escapeHtml(r.reportNo)}</strong> — Page ${escapeHtml(r.pageNumber || '—')} — ${escapeHtml(r.date || '—')}
+    </div>
+  `).join('');
+  resultsEl.querySelectorAll('.backup-result').forEach(el => {
+    el.addEventListener('click', () => onLoadBackup(el.getAttribute('data-reportno')));
+  });
+}
+
+function onLoadBackup(reportNo){
+  const statusEl = document.getElementById('backupApplyStatus');
+  statusEl.textContent = 'Loading…';
+  statusEl.classList.remove('error');
+  fetch(`${APPS_SCRIPT_URL}?action=getBackup&reportNo=${encodeURIComponent(reportNo)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) throw new Error(data.error || 'Load failed');
+      if (!data.formDataJSON) throw new Error('No saved form data for this report (it may predate this feature).');
+      const snapshot = JSON.parse(data.formDataJSON);
+      applyFormSnapshot(snapshot);
+      statusEl.textContent = `Loaded ${reportNo} into the form. Review everything before regenerating.`;
+    })
+    .catch(err => {
+      statusEl.textContent = `Could not load: ${err.message}`;
+      statusEl.classList.add('error');
+    });
+}
+
+/* =========================================================================
+   Reset ("Start New Report") — common fields; pages implement
+   resetPageSpecificFields() for the rest.
+   ========================================================================= */
+function resetForm(){
+  const today = new Date();
+  document.getElementById('reportNum').value = '';
+  document.getElementById('reportMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('reportYear').value = today.getFullYear();
+  document.getElementById('reportDate').value = today.toISOString().slice(0, 10);
+  document.getElementById('pageNumber').value = '';
+  updateReportNumberPreview();
+
+  clearSelectedAddress();
+  document.getElementById('addressSearch').value = '';
+  document.getElementById('addressResults').style.display = 'none';
+  document.getElementById('addAddressForm').style.display = 'none';
+  document.getElementById('newAddressText').value = '';
+  document.getElementById('newAddressShort').value = '';
+
+  renderSignatoryFields(); // re-applies auto-fill for any single-name slots
+
+  const clearIfPresent = (id) => { const el = document.getElementById(id); if (el) el.value = ''; };
+  clearIfPresent('backupSearchInput');
+  const backupResults = document.getElementById('backupResults');
+  if (backupResults) backupResults.innerHTML = '';
+  const backupStatus = document.getElementById('backupApplyStatus');
+  if (backupStatus) backupStatus.textContent = '';
+
+  document.getElementById('statusMsg').className = '';
+  document.getElementById('statusMsg').textContent = '';
+  const newReportBtn = document.getElementById('newReportBtn');
+  if (newReportBtn) newReportBtn.style.display = 'none';
+
+  if (typeof resetPageSpecificFields === 'function') resetPageSpecificFields();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* =========================================================================
+   Generate + log — pages implement validateForm(), buildDocx(), and
+   getAvgStrengthForLog(); everything else here is generic.
+   ========================================================================= */
+async function onGenerate(){
+  const statusEl = document.getElementById('statusMsg');
+  statusEl.className = '';
+  statusEl.textContent = '';
+
+  const errors = (typeof validateForm === 'function') ? validateForm() : [];
+  if (typeof docx === 'undefined' || !docx.Packer) {
+    errors.push('The docx library failed to load from the CDN — check your internet connection, or that cdn.jsdelivr.net isn\'t blocked, then reload the page.');
+  }
+  if (errors.length) {
+    statusEl.className = 'error';
+    statusEl.innerHTML = errors.map(e => `\u2022 ${escapeHtml(e)}`).join('<br>');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const blob = await buildDocx();
+    const reportNo = sanitizeForFilename(composedReportNumber());
+    const pageNum = sanitizeForFilename(document.getElementById('pageNumber').value.trim());
+    const filenameStem = pageNum ? `${pageNum}_${reportNo}` : reportNo;
+    downloadBlob(blob, `${filenameStem}.docx`);
+    statusEl.className = 'ok';
+    statusEl.textContent = 'Report generated and downloaded.';
+    const newReportBtn = document.getElementById('newReportBtn');
+    if (newReportBtn) newReportBtn.style.display = 'inline-block';
+
+    const sigForDisplay = getSignatoryNamesBySlot();
+    renderLastSubmittedInfo({
+      pageNumber: document.getElementById('pageNumber').value.trim(),
+      reportNo: composedReportNumber(),
+      investigator1: sigForDisplay.investigators[0] || ''
+    });
+    logReportToSheet(); // best-effort; never blocks or reverts the download above
+  } catch (err) {
+    statusEl.className = 'error';
+    statusEl.textContent = `Failed to generate report: ${err.message}`;
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Report (.docx)';
+  }
+}
+
+async function logReportToSheet(){
+  const statusEl = document.getElementById('statusMsg');
+  try {
+    const sig = getSignatoryNamesBySlot();
+    const avgStrength = (typeof getAvgStrengthForLog === 'function') ? getAvgStrengthForLog() : '';
+    const payload = {
+      testType: REPORT_TYPE,
+      pageNumber: document.getElementById('pageNumber').value.trim(),
+      reportNo: composedReportNumber(),
+      date: fmtDate(document.getElementById('reportDate').value),
+      addresseeId: selectedAddress ? selectedAddress.addressId : '',
+      avgStrength: (avgStrength !== null && avgStrength !== undefined && avgStrength !== '' && !isNaN(avgStrength)) ? Number(Number(avgStrength).toFixed(2)) : '',
+      testPerformedBy: sig.testPerformedBy.join(', '),
+      investigator1: sig.investigators[0] || '',
+      investigator2: sig.investigators.slice(1).join(', '),
+      hod: sig.hod,
+      formDataJSON: JSON.stringify(collectFormSnapshot())
+    };
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=logReport`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Log failed');
+  } catch (err) {
+    statusEl.textContent += ` (Note: could not log this report to the sheet: ${err.message})`;
+  }
+}
+
+/* =========================================================================
+   Wiring shared by both pages — call from each page's own wireEvents()
+   ========================================================================= */
+function wireCommonEvents(){
+  document.getElementById('reportNum').addEventListener('input', updateReportNumberPreview);
+  document.getElementById('reportMonth').addEventListener('change', updateReportNumberPreview);
+  document.getElementById('reportYear').addEventListener('input', updateReportNumberPreview);
+
+  document.getElementById('addressSearch').addEventListener('input', debounce(onAddressSearch, 300));
+  document.getElementById('showAddAddressBtn').addEventListener('click', () => {
+    document.getElementById('addAddressForm').style.display = 'block';
+  });
+  document.getElementById('cancelAddAddressBtn').addEventListener('click', () => {
+    document.getElementById('addAddressForm').style.display = 'none';
+    document.getElementById('newAddressText').value = '';
+    document.getElementById('newAddressShort').value = '';
+  });
+  document.getElementById('saveAddressBtn').addEventListener('click', onSaveNewAddress);
+
+  const advancedToggleBtn = document.getElementById('advancedToggleBtn');
+  if (advancedToggleBtn) advancedToggleBtn.addEventListener('click', toggleAdvancedSection);
+
+  const backupSearchBtn = document.getElementById('backupSearchBtn');
+  if (backupSearchBtn) backupSearchBtn.addEventListener('click', onBackupSearch);
+  const backupSearchInput = document.getElementById('backupSearchInput');
+  if (backupSearchInput) {
+    backupSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); onBackupSearch(); }
+    });
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', onGenerate);
+  const newReportBtn = document.getElementById('newReportBtn');
+  if (newReportBtn) newReportBtn.addEventListener('click', resetForm);
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#addressSearchWrap')) {
+      document.getElementById('addressResults').style.display = 'none';
+    }
+  });
+}
+
+
+/* =========================================================================
+   Stabilized soil block specific — IS 1725:2023
+   Six independent specimen tables, one per test.
+   ========================================================================= */
+let dimensionTable, densityTable, compressiveTable, absorptionTable, expansionTable, weatheringTable;
+
+const SB_CLASSES = [3.5, 5.0, 7.5, 10.0];      // Table 1
+const DIM_TOL = 2;                              // Cl. 7.3, mm
+const DENSITY_MIN = 1750;                       // Cl. 8.1, kg/m³
+const INDIVIDUAL_FACTOR = 0.85;                 // Cl. 8.2.1.1 (not more than 15 % below)
+const ABSORPTION_MAX = 18;                      // Cl. 8.3, %
+const EXPANSION_MAX = 0.10;                     // Cl. 8.4, %
+const WEATHERING_MAX = 3;                       // Cl. 8.5, %
+const DEFAULT_THREE = 3;                        // Cl. 9.2 — three blocks for density / expansion / weathering
+
+// Field classes for each table, in column order. Used by the row builders,
+// snapshot, reset and the log-book JSON fill so they cannot drift apart.
+const SB_TABLES = {
+  dimension:   { fields: ['dimL', 'dimW', 'dimH'] },
+  density:     { fields: ['denL', 'denW', 'denH', 'denMass'] },
+  compressive: { fields: ['length', 'width', 'maxLoad'], checks: ['ignored'] },
+  absorption:  { fields: ['dryWeight', 'wetWeight'] },
+  expansion:   { fields: ['li', 'i1', 'i2', 'f1', 'f2'] },
+  weathering:  { fields: ['wi', 'wf'] }
+};
+function sbTable(key){
+  return { dimension: dimensionTable, density: densityTable, compressive: compressiveTable,
+           absorption: absorptionTable, expansion: expansionTable, weathering: weatheringTable }[key];
+}
+
+/* ---- small numeric helpers ---- */
+function numIn(row, cls){ const el = row.querySelector('.' + cls); return el ? parseFloat(el.value) : NaN; }
+function meanOf(values){ const v = values.filter(x => !isNaN(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : NaN; }
+function roundTo(x, dp){ const f = Math.pow(10, dp); return Math.round(x * f) / f; }
+function fx(x, dp){ return isNaN(x) ? '—' : roundTo(x, dp).toFixed(dp); }
+function roundHalf(x){ return Math.round(x * 2) / 2; }
+function fmtHalf(x){ if (isNaN(x)) return '—'; const r = roundHalf(x); return Number.isInteger(r) ? String(r) : r.toFixed(1); }
+function inputCells(fields){ return fields.map(f => `<td><input type="number" step="any" class="${f}"></td>`).join(''); }
+function setSummary(id, text, ok){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'result-line' + (ok === false ? ' bad' : ok === true ? ' good' : '');
+}
+
+/* ---- row builders ---- */
+function buildDimensionRowCells(){ return inputCells(SB_TABLES.dimension.fields) + '<td class="calc dimOk">—</td>'; }
+function buildDensityRowCells(){ return inputCells(SB_TABLES.density.fields) + '<td class="calc density">—</td><td class="calc mean">—</td>'; }
+function buildCompressiveRowCells(){
+  return `
+    <td><input type="number" step="any" class="length"></td>
+    <td><input type="number" step="any" class="width"></td>
+    <td class="calc bedArea">—</td>
+    <td><input type="number" step="any" class="maxLoad"></td>
+    <td class="calc strength">—</td>
+    <td><input type="checkbox" class="ignored" style="width:auto;"></td>
+    <td class="calc mean">—</td>
+  `;
+}
+function buildAbsorptionRowCells(){ return inputCells(SB_TABLES.absorption.fields) + '<td class="calc absorption">—</td><td class="calc mean">—</td>'; }
+function buildExpansionRowCells(){ return inputCells(SB_TABLES.expansion.fields) + '<td class="calc le">—</td><td class="calc pct">—</td><td class="calc mean">—</td>'; }
+function buildWeatheringRowCells(){ return inputCells(SB_TABLES.weathering.fields) + '<td class="calc loss">—</td><td class="calc mean">—</td>'; }
+
+/* ---- declared size ---- */
+function parseNominalSize(){
+  const nums = (document.getElementById('nominalSize').value || '').match(/\d+(?:\.\d+)?/g);
+  return (nums && nums.length >= 3) ? { l: parseFloat(nums[0]), w: parseFloat(nums[1]), h: parseFloat(nums[2]) } : {};
+}
+function getDeclaredDims(){
+  const nom = parseNominalSize();
+  const pick = (id, fb) => { const v = parseFloat(document.getElementById(id).value); return !isNaN(v) ? v : (fb !== undefined ? fb : NaN); };
+  return { l: pick('declaredLength', nom.l), w: pick('declaredWidth', nom.w), h: pick('declaredHeight', nom.h) };
+}
+function getBlockClass(){ const v = parseFloat(document.getElementById('blockClass').value); return isNaN(v) ? NaN : v; }
+
+/* ---- data getters (screen and certificate use the same numbers) ---- */
+function getDimensionData(){
+  const decl = getDeclaredDims();
+  const blocks = dimensionTable.rows().map(row => {
+    const b = { l: numIn(row, 'dimL'), w: numIn(row, 'dimW'), h: numIn(row, 'dimH') };
+    b.complete = !isNaN(b.l) && !isNaN(b.w) && !isNaN(b.h);
+    b.fails = [];
+    [['l', 'length'], ['w', 'width'], ['h', 'height']].forEach(([k, name]) => {
+      if (!isNaN(b[k]) && !isNaN(decl[k]) && Math.abs(roundHalf(b[k]) - decl[k]) > DIM_TOL) b.fails.push(name);
+    });
+    return b;
+  });
+  const means = { l: meanOf(blocks.map(b => b.l)), w: meanOf(blocks.map(b => b.w)), h: meanOf(blocks.map(b => b.h)) };
+  const failed = blocks.map((b, i) => b.fails.length ? { n: i + 1, fails: b.fails } : null).filter(Boolean);
+  const defects = parseInt(document.getElementById('visualDefects').value, 10);
+  return { decl, blocks, means, failed, ok: failed.length === 0, visualDefects: isNaN(defects) ? NaN : defects,
+           visualRemarks: document.getElementById('visualRemarks').value.trim() };
+}
+
+function getDensityData(){
+  const specs = densityTable.rows().map(row => {
+    const s = { l: numIn(row, 'denL'), w: numIn(row, 'denW'), h: numIn(row, 'denH'), mass: numIn(row, 'denMass') };
+    const vol = s.l * s.w * s.h;
+    s.density = (vol > 0 && s.mass > 0) ? s.mass * 1e9 / vol : NaN; // kg/m³ (C-4.1)
+    return s;
+  });
+  const avg = roundTo(meanOf(specs.map(s => s.density)), 0); // C-4.2: nearest 1 kg/m³
+  return { specs, avg, ok: !isNaN(avg) ? avg >= DENSITY_MIN : null };
+}
+
+function getCompressiveData(){
+  const specs = compressiveTable.rows().map(row => {
+    const s = { length: numIn(row, 'length'), width: numIn(row, 'width'), load: numIn(row, 'maxLoad'),
+                ignored: row.querySelector('.ignored').checked };
+    s.bedArea = s.length * s.width;
+    s.strength = (s.bedArea > 0 && !isNaN(s.load)) ? s.load * 1000 / s.bedArea : NaN;
+    return s;
+  });
+  const used = specs.filter(s => !s.ignored);
+  const mean = roundTo(meanOf(used.map(s => s.strength)), 1); // IS 3495 (Part 1) 4.1.4.1: nearest 0.1 N/mm²
+  const usedVals = used.map(s => roundTo(s.strength, 1)).filter(v => !isNaN(v));
+  const minIndividual = usedVals.length ? Math.min(...usedVals) : NaN;
+  const cls = getBlockClass();
+  let check = null;
+  if (!isNaN(cls) && !isNaN(mean)) {
+    const indivMin = roundTo(cls * INDIVIDUAL_FACTOR, 3);
+    const below = used.map((s, i) => ({ s, i })).filter(x => roundTo(x.s.strength, 1) < indivMin);
+    check = { cls, indivMin, meetsAvg: mean >= cls, meetsIndiv: below.length === 0, belowCount: below.length };
+    check.ok = check.meetsAvg && check.meetsIndiv;
+  }
+  let guessed = null;
+  if (!isNaN(mean) && !isNaN(minIndividual)) {
+    SB_CLASSES.forEach(c => { if (mean >= c && minIndividual >= roundTo(c * INDIVIDUAL_FACTOR, 3)) guessed = c; });
+  }
+  return { specs, mean, minIndividual, check, guessed, ignoredCount: specs.filter(s => s.ignored).length, usedCount: used.length };
+}
+
+function getAbsorptionData(){
+  const specs = absorptionTable.rows().map(row => {
+    const s = { dryWeight: numIn(row, 'dryWeight'), wetWeight: numIn(row, 'wetWeight') };
+    s.absorption = (s.dryWeight > 0 && !isNaN(s.wetWeight)) ? (s.wetWeight - s.dryWeight) / s.dryWeight * 100 : NaN;
+    return s;
+  });
+  const mean = roundTo(meanOf(specs.map(s => s.absorption)), 2);
+  return { specs, mean, ok: !isNaN(mean) ? mean <= ABSORPTION_MAX : null };
+}
+
+function getExpansionData(){
+  const specs = expansionTable.rows().map(row => {
+    const s = { li: numIn(row, 'li'), i1: numIn(row, 'i1'), i2: numIn(row, 'i2'), f1: numIn(row, 'f1'), f2: numIn(row, 'f2') };
+    s.initial = meanOf([s.i1, s.i2]);
+    s.final = meanOf([s.f1, s.f2]);
+    s.le = (!isNaN(s.initial) && !isNaN(s.final)) ? s.final - s.initial : NaN;  // D-3 (f)
+    s.pct = (s.li > 0 && !isNaN(s.le)) ? s.le / s.li * 100 : NaN;             // D-4.1
+    return s;
+  });
+  const avg = roundTo(meanOf(specs.map(s => s.pct)), 2); // D-4.2: 0.01 percent
+  return { specs, avg, ok: !isNaN(avg) ? avg <= EXPANSION_MAX : null };
+}
+
+function getWeatheringData(){
+  const specs = weatheringTable.rows().map(row => {
+    const s = { wi: numIn(row, 'wi'), wf: numIn(row, 'wf') };
+    s.loss = (s.wi > 0 && !isNaN(s.wf)) ? (s.wi - s.wf) / s.wi * 100 : NaN; // E-4.1
+    return s;
+  });
+  const avg = roundTo(meanOf(specs.map(s => s.loss)), 1); // E-4.2: 0.1 percent
+  return { specs, avg, ok: !isNaN(avg) ? avg <= WEATHERING_MAX : null };
+}
+
+/* ---- on-screen recalculation ---- */
+function recalcDimensions(){
+  if (!dimensionTable) return;
+  const d = getDimensionData();
+  dimensionTable.rows().forEach((row, i) => {
+    const b = d.blocks[i];
+    const c = row.querySelector('.dimOk');
+    c.textContent = !b.complete ? '—' : (b.fails.length ? `✕ ${b.fails.join(', ')}` : '✓');
+    c.style.color = b.fails.length ? 'var(--danger)' : '';
+  });
+  if (isNaN(d.decl.l) || isNaN(d.decl.w) || isNaN(d.decl.h)) {
+    setSummary('dimensionSummary', 'Declared length / width / height not known. Enter them above, or a Nominal Size like "290 x 140 x 90 mm".', false);
+    return;
+  }
+  setSummary('dimensionSummary',
+    `Declared ${d.decl.l} × ${d.decl.w} × ${d.decl.h} mm, tolerance ± ${DIM_TOL} mm. ` +
+    (d.ok ? 'All blocks within tolerance.' : `Outside tolerance: ${d.failed.map(f => `block ${f.n} (${f.fails.join(', ')})`).join('; ')}.`), d.ok);
+}
+
+function recalcDensity(){
+  if (!densityTable) return;
+  const d = getDensityData();
+  densityTable.rows().forEach((row, i) => {
+    row.querySelector('.density').textContent = fx(d.specs[i].density, 0);
+    row.querySelector('.mean').textContent = fx(d.avg, 0);
+  });
+  setSummary('densitySummary', isNaN(d.avg) ? '—' : `Average ${fx(d.avg, 0)} kg/m³ (min ${DENSITY_MIN}): ${d.ok ? 'meets' : 'does not meet'} Cl. 8.1.`, d.ok);
+}
+
+function recalcCompressive(){
+  if (!compressiveTable) return;
+  const d = getCompressiveData();
+  compressiveTable.rows().forEach((row, i) => {
+    const s = d.specs[i];
+    row.querySelector('.bedArea').textContent = s.bedArea > 0 ? String(Math.round(s.bedArea)) : '—';
+    row.querySelector('.strength').textContent = fx(s.strength, 2);
+    row.querySelector('.strength').style.textDecoration = s.ignored ? 'line-through' : '';
+    row.querySelector('.mean').textContent = fx(d.mean, 1);
+  });
+  if (isNaN(d.mean)) { setSummary('compressiveSummary', '—'); return; }
+  if (d.check) {
+    let t = `Average ${fx(d.mean, 1)} N/mm², lowest individual ${fx(d.minIndividual, 1)} N/mm². Class ${d.check.cls.toFixed(1)}: average ≥ ${d.check.cls.toFixed(1)}, individual ≥ ${d.check.indivMin}. ${d.check.ok ? 'Meets' : 'Does not meet'} Cl. 8.2.`;
+    if (d.check.meetsAvg && d.check.belowCount === 1 && d.ignoredCount === 0) t += ' One block is low: Cl. 8.2.1.2 allows it to be ignored and two more blocks tested.';
+    if (d.ignoredCount && d.usedCount !== 4) t += ` Note: after a retest the set should be 4 blocks (now ${d.usedCount}).`;
+    setSummary('compressiveSummary', t, d.check.ok);
+  } else {
+    setSummary('compressiveSummary', `Average ${fx(d.mean, 1)} N/mm², lowest individual ${fx(d.minIndividual, 1)} N/mm². ` +
+      (d.guessed !== null ? `Satisfies Class ${d.guessed.toFixed(1)}.` : 'Below Class 3.5.'), d.guessed !== null);
+  }
+}
+
+function recalcAbsorption(){
+  if (!absorptionTable) return;
+  const d = getAbsorptionData();
+  absorptionTable.rows().forEach((row, i) => {
+    row.querySelector('.absorption').textContent = fx(d.specs[i].absorption, 2);
+    row.querySelector('.mean').textContent = fx(d.mean, 2);
+  });
+  setSummary('absorptionSummary', isNaN(d.mean) ? '—' : `Average ${fx(d.mean, 2)} % (max ${ABSORPTION_MAX}): ${d.ok ? 'meets' : 'does not meet'} Cl. 8.3.`, d.ok);
+}
+
+function recalcExpansion(){
+  if (!expansionTable) return;
+  const d = getExpansionData();
+  expansionTable.rows().forEach((row, i) => {
+    const s = d.specs[i];
+    row.querySelector('.le').textContent = fx(s.le, 3);
+    row.querySelector('.pct').textContent = fx(s.pct, 3);
+    row.querySelector('.mean').textContent = fx(d.avg, 2);
+  });
+  const neg = d.specs.some(s => s.le < 0);
+  setSummary('expansionSummary', isNaN(d.avg) ? '—' :
+    `Average ${fx(d.avg, 2)} % (max ${EXPANSION_MAX.toFixed(2)}): ${d.ok ? 'meets' : 'does not meet'} Cl. 8.4.` +
+    (neg ? ' A negative expansion means the final reading is lower than the initial; check the gauge direction.' : ''), d.ok);
+}
+
+function recalcWeathering(){
+  if (!weatheringTable) return;
+  const d = getWeatheringData();
+  weatheringTable.rows().forEach((row, i) => {
+    row.querySelector('.loss').textContent = fx(d.specs[i].loss, 2);
+    row.querySelector('.mean').textContent = fx(d.avg, 1);
+  });
+  setSummary('weatheringSummary', isNaN(d.avg) ? '—' : `Average ${fx(d.avg, 1)} % (max ${WEATHERING_MAX}): ${d.ok ? 'meets' : 'does not meet'} Cl. 8.5.`, d.ok);
+}
+
+function recalcAll(){
+  recalcDimensions(); recalcDensity(); recalcCompressive(); recalcAbsorption(); recalcExpansion(); recalcWeathering();
+}
+
+/* =========================================================================
+   Choice of tests — show/hide the relevant specimen cards
+   ========================================================================= */
+const SB_TESTS = [
+  { key: 'dimensions',  checkbox: 'testDimensions',  card: 'dimensionCard',   name: 'Visual Inspection and Dimensions' },
+  { key: 'density',     checkbox: 'testDensity',     card: 'densityCard',     name: 'Dry Density' },
+  { key: 'compressive', checkbox: 'testCompressive', card: 'compressiveCard', name: 'Wet Compressive Strength' },
+  { key: 'absorption',  checkbox: 'testAbsorption',  card: 'absorptionCard',  name: 'Water Absorption' },
+  { key: 'expansion',   checkbox: 'testExpansion',   card: 'expansionCard',   name: 'Linear Expansion on Saturation' },
+  { key: 'weathering',  checkbox: 'testWeathering',  card: 'weatheringCard',  name: 'Weathering' }
+];
+const SB_DEFAULT_TICKS = { dimensions: true, density: true, compressive: true, absorption: true, expansion: false, weathering: false };
+
+function getSelectedTests(){
+  const sel = {};
+  SB_TESTS.forEach(t => { sel[t.key] = document.getElementById(t.checkbox).checked; });
+  return sel;
+}
+
+function updateTestCardVisibility(){
+  const sel = getSelectedTests();
+  SB_TESTS.forEach(t => { document.getElementById(t.card).style.display = sel[t.key] ? 'block' : 'none'; });
+  updateSpecimenPromptScope();
+}
+
+/* =========================================================================
+   Init
+   ========================================================================= */
+function onConfigLoaded(){
+  if (!compressiveTable) {
+    const mk = (key, rowCells, onChange, label) => createSpecimenTable({
+      bodyId: `${key}Body`, addBtnId: `add${label}Btn`, countHintId: `${key}CountHint`,
+      min: MIN_SPECIMENS, max: MAX_SPECIMENS, buildRowCells: rowCells, onChange
+    });
+    dimensionTable   = mk('dimension',   buildDimensionRowCells,   recalcDimensions,  'Dimension');
+    densityTable     = mk('density',     buildDensityRowCells,     recalcDensity,     'Density');
+    compressiveTable = mk('compressive', buildCompressiveRowCells, recalcCompressive, 'Compressive');
+    absorptionTable  = mk('absorption',  buildAbsorptionRowCells,  recalcAbsorption,  'Absorption');
+    expansionTable   = mk('expansion',   buildExpansionRowCells,   recalcExpansion,   'Expansion');
+    weatheringTable  = mk('weathering',  buildWeatheringRowCells,  recalcWeathering,  'Weathering');
+  }
+  rebuildAllTables();
+  updateTestCardVisibility();
+}
+
+function rebuildAllTables(){
+  dimensionTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  densityTable.rebuild(DEFAULT_THREE);
+  compressiveTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  absorptionTable.rebuild(DEFAULT_INITIAL_SPECIMENS);
+  expansionTable.rebuild(DEFAULT_THREE);
+  weatheringTable.rebuild(DEFAULT_THREE);
+  recalcAll();
+}
+
+/* =========================================================================
+   Validation
+   ========================================================================= */
+function validateForm(){
+  const errors = [];
+  if (!document.getElementById('reportNum').value.trim()) errors.push('Report number is required.');
+  if (!document.getElementById('reportYear').value.trim()) errors.push('Report year is required.');
+  if (!document.getElementById('reportDate').value) errors.push('Report date is required.');
+  if (!selectedAddress) errors.push('Please select or add an addressee.');
+  if (!document.getElementById('testingDate').value) errors.push('Date of Testing is required.');
+
+  const sig1Filled = getSignatoryNamesBySlot().testPerformedBy.length > 0;
+  if (!sig1Filled) errors.push(`"${SIG_LABELS.col1}" signatory is required.`);
+
+  const sel = getSelectedTests();
+  if (!SB_TESTS.some(t => sel[t.key])) errors.push(`Select at least one test (${SB_TESTS.map(t => t.name).join(' / ')}).`);
+
+  const need = (table, fields, label, names) => {
+    table.rows().forEach((row, i) => {
+      fields.forEach((f, k) => { if (isNaN(numIn(row, f))) errors.push(`${label} specimen ${i + 1}: ${names[k]} is required.`); });
+    });
+  };
+  if (sel.dimensions) {
+    const d = getDeclaredDims();
+    if (isNaN(d.l) || isNaN(d.w) || isNaN(d.h)) errors.push('Dimensions: declared length, width and height are needed (enter them, or a Nominal Size like "290 x 140 x 90 mm").');
+    if (isNaN(parseInt(document.getElementById('visualDefects').value, 10))) errors.push('Visual inspection: number of blocks with visual defects is required (0 if none).');
+    need(dimensionTable, SB_TABLES.dimension.fields, 'Dimensions', ['length', 'width', 'height']);
+  }
+  if (sel.density) need(densityTable, SB_TABLES.density.fields, 'Dry density', ['length', 'width', 'height', 'dry mass']);
+  if (sel.compressive) {
+    need(compressiveTable, SB_TABLES.compressive.fields, 'Compressive', ['length', 'width', 'max load']);
+    if (getCompressiveData().usedCount === 0) errors.push('Compressive: every specimen is marked "Ignored".');
+  }
+  if (sel.absorption) need(absorptionTable, SB_TABLES.absorption.fields, 'Absorption', ['dry weight', 'wet weight']);
+  if (sel.expansion) {
+    expansionTable.rows().forEach((row, i) => {
+      if (isNaN(numIn(row, 'li'))) errors.push(`Linear expansion specimen ${i + 1}: initial length is required.`);
+      if (isNaN(numIn(row, 'i1')) && isNaN(numIn(row, 'i2'))) errors.push(`Linear expansion specimen ${i + 1}: an initial dial reading is required.`);
+      if (isNaN(numIn(row, 'f1')) && isNaN(numIn(row, 'f2'))) errors.push(`Linear expansion specimen ${i + 1}: a final dial reading is required.`);
+    });
+  }
+  if (sel.weathering) need(weatheringTable, SB_TABLES.weathering.fields, 'Weathering', ['initial mass', 'final mass']);
+  return errors;
+}
+
+function getAvgStrengthForLog(){
+  if (!getSelectedTests().compressive) return '';
+  const m = getCompressiveData().mean;
+  return isNaN(m) ? '' : m;
+}
+
+/* =========================================================================
+   Snapshot collect/apply/reset
+   ========================================================================= */
+const SB_TEXT_FIELDS = ['workDesc', 'aeLetterRef', 'aeLetterDate', 'agreementNumber', 'agreementDate', 'extraRef1', 'extraRef2',
+  'blockClass', 'nominalSize', 'stabilizer', 'sourceSupplier', 'testingDate', 'receiptDate',
+  'declaredLength', 'declaredWidth', 'declaredHeight', 'visualDefects', 'visualRemarks'];
+
+function readTableRows(key){
+  const def = SB_TABLES[key];
+  return sbTable(key).rows().map(row => {
+    const o = {};
+    def.fields.forEach(f => { o[f] = row.querySelector('.' + f).value; });
+    (def.checks || []).forEach(f => { o[f] = row.querySelector('.' + f).checked; });
+    return o;
+  });
+}
+
+function writeTableRows(key, list){
+  if (!Array.isArray(list) || !list.length) return;
+  const def = SB_TABLES[key];
+  const table = sbTable(key);
+  table.setCount(Math.min(list.length, MAX_SPECIMENS));
+  const rows = table.rows();
+  list.forEach((s, i) => {
+    if (!rows[i] || !s) return;
+    def.fields.forEach(f => { if (s[f] !== undefined && s[f] !== null) rows[i].querySelector('.' + f).value = s[f]; });
+    (def.checks || []).forEach(f => { rows[i].querySelector('.' + f).checked = !!s[f]; });
+  });
+}
+
+function collectPageSnapshot(){
+  const snap = { selectedTests: getSelectedTests() };
+  SB_TEXT_FIELDS.forEach(id => { snap[id] = document.getElementById(id).value; });
+  Object.keys(SB_TABLES).forEach(key => { snap[key] = readTableRows(key); });
+  return snap;
+}
+
+function applyPageSnapshot(snapshot){
+  SB_TEXT_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && snapshot[id] !== undefined && snapshot[id] !== null) el.value = snapshot[id];
+  });
+  if (snapshot.selectedTests) {
+    SB_TESTS.forEach(t => { document.getElementById(t.checkbox).checked = !!snapshot.selectedTests[t.key]; });
+    updateTestCardVisibility();
+  }
+  Object.keys(SB_TABLES).forEach(key => writeTableRows(key, snapshot[key]));
+  recalcAll();
+}
+
+function resetPageSpecificFields(){
+  SB_TEXT_FIELDS.forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('nominalSize').value = '290 x 140 x 90 mm';
+  document.getElementById('visualDefects').value = '0';
+  SB_TESTS.forEach(t => { document.getElementById(t.checkbox).checked = SB_DEFAULT_TICKS[t.key]; });
+  updateTestCardVisibility();
+  rebuildAllTables();
+  ['llmJsonInput', 'specimenJsonInput'].forEach(id => { document.getElementById(id).value = ''; });
+  ['jsonApplyStatus', 'specimenJsonApplyStatus'].forEach(id => { document.getElementById(id).textContent = ''; });
+}
+
+/* =========================================================================
+   LLM-assisted auto-fill of the Engineer Letter fields
+   ========================================================================= */
+function getExtractionPrompt(){
+  return `You are extracting structured data from a letter (scan/photo/PDF) sent by an Assistant Engineer, for a stabilized soil block test lab report.
+
+Read the attached letter (OCR it if scanned or an image) and return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences:
+
+{
+  "workDescription": string or null,
+  "aeLetterRef": string or null,
+  "aeLetterDate": string or null,
+  "agreementNumber": string or null,
+  "agreementDate": string or null,
+  "blockClass": string or null,
+  "nominalSize": string or null,
+  "stabilizer": string or null,
+  "sourceSupplier": string or null,
+  "testingDate": string or null,
+  "receiptDate": string or null,
+  "extraRef1": string or null,
+  "extraRef2": string or null,
+  "addressee": string or null
+}
+
+Field notes:
+- workDescription: the SO number and/or work description mentioned.
+- aeLetterRef / aeLetterDate: the Assistant Engineer's own letter reference number and its date.
+- agreementNumber / agreementDate: the agreement referenced, if any.
+- blockClass: the declared class of the stabilized soil blocks, one of "3.5", "5.0", "7.5", "10.0", if stated.
+- nominalSize: the block size, written like "290 x 140 x 90 mm", if stated.
+- stabilizer: the stabilizer used (e.g. "Cement 8%"), if stated.
+- sourceSupplier: the block source/supplier/manufacturer, if named.
+- testingDate / receiptDate: relevant dates if stated.
+- extraRef1 / extraRef2: any other distinct reference mentioned that does not fit the fields above.
+- addressee: the sender's name, designation, and office as a multi-line address block, lines separated by \\n (a draft only — reviewed before saving).
+
+Rules:
+- Use null for anything not stated in the letter — never guess or invent a value.
+- Normalize every date to YYYY-MM-DD.
+- Output must be valid JSON and nothing else.`;
+}
+
+function onCopyPrompt(){
+  const statusEl = document.getElementById('jsonApplyStatus');
+  copyToClipboard(getExtractionPrompt(), () => {
+    statusEl.classList.remove('error');
+    statusEl.textContent = 'Prompt copied to clipboard — paste it into an LLM chat along with the letter PDF.';
+  });
+}
+
+function onApplyJson(){
+  const statusEl = document.getElementById('jsonApplyStatus');
+  statusEl.classList.remove('error');
+  const raw = document.getElementById('llmJsonInput').value.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  if (!raw) { statusEl.textContent = 'Paste the JSON returned by the LLM first.'; statusEl.classList.add('error'); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (err) { statusEl.textContent = `Invalid JSON: ${err.message}`; statusEl.classList.add('error'); return; }
+
+  const textFieldMap = {
+    workDescription: 'workDesc', aeLetterRef: 'aeLetterRef', agreementNumber: 'agreementNumber',
+    nominalSize: 'nominalSize', stabilizer: 'stabilizer', sourceSupplier: 'sourceSupplier', extraRef1: 'extraRef1', extraRef2: 'extraRef2'
+  };
+  const dateFieldMap = { aeLetterDate: 'aeLetterDate', agreementDate: 'agreementDate', testingDate: 'testingDate', receiptDate: 'receiptDate' };
+
+  const filled = [];
+  const skipped = [];
+  Object.entries(textFieldMap).forEach(([jsonKey, elId]) => {
+    const val = data[jsonKey];
+    if (val !== null && val !== undefined && val.toString().trim()) {
+      document.getElementById(elId).value = val.toString().trim();
+      filled.push(elId);
+    }
+  });
+  if (data.blockClass !== null && data.blockClass !== undefined && String(data.blockClass).trim()) {
+    const c = parseFloat(String(data.blockClass).replace(/[^\d.]/g, ''));
+    const match = SB_CLASSES.find(x => x === c);
+    if (match !== undefined) { document.getElementById('blockClass').value = match.toFixed(1); filled.push('blockClass'); }
+    else skipped.push(`blockClass="${data.blockClass}" is not a Table 1 class`);
+  }
+  Object.entries(dateFieldMap).forEach(([jsonKey, elId]) => {
+    const val = data[jsonKey];
+    if (val !== null && val !== undefined && val.toString().trim()) {
+      const iso = normalizeDateStr(val);
+      if (iso) { document.getElementById(elId).value = iso; filled.push(elId); }
+      else skipped.push(`could not parse ${jsonKey}="${val}"`);
+    }
+  });
+  if (data.addressee && data.addressee.toString().trim()) {
+    document.getElementById('addAddressForm').style.display = 'block';
+    document.getElementById('newAddressText').value = data.addressee.toString().trim();
+    filled.push('addressee (draft — review, then "Save & use")');
+  }
+  recalcAll();
+
+  let msg = filled.length ? `Filled: ${filled.join(', ')}.` : 'Nothing matched — check the JSON keys against the prompt schema.';
+  if (skipped.length) msg += ` Skipped: ${skipped.join('; ')} — enter manually.`;
+  statusEl.textContent = msg;
+  if (!filled.length) statusEl.classList.add('error');
+}
+
+/* =========================================================================
+   LLM-assisted auto-fill of the specimen tables from a log book photo.
+   The prompt only asks for the tests ticked in section 5.
+   ========================================================================= */
+const SB_PROMPT = {
+  dimensions: {
+    jsonKey: 'dimensions', table: 'dimension',
+    map: { length: 'dimL', width: 'dimW', height: 'dimH' },
+    shape: `  "dimensions": [ { "length": number or null, "width": number or null, "height": number or null } ]`,
+    scope: 'Visual & Dimensions (length, width, height of each block)',
+    notes: `DIMENSIONS ("dimensions"):
+- One entry per block. length, width, height in mm.
+- If several readings are written for one dimension of a block, give their mean.`
+  },
+  density: {
+    jsonKey: 'density', table: 'density',
+    map: { length: 'denL', width: 'denW', height: 'denH', dryMass: 'denMass' },
+    shape: `  "density": [ { "length": number or null, "width": number or null, "height": number or null, "dryMass": number or null } ]`,
+    scope: 'Dry Density (dried block length, width, height and mass)',
+    notes: `DRY DENSITY ("density"):
+- One entry per specimen (usually A, B, C). length, width, height of the oven-dried block in mm.
+- dryMass: oven-dry mass in kg (if recorded in g, divide by 1000).
+- Do NOT return volume or density — these are recalculated here.`
+  },
+  compressive: {
+    jsonKey: 'compressive', table: 'compressive',
+    map: { length: 'length', width: 'width', maxLoad: 'maxLoad' },
+    shape: `  "compressive": [ { "length": number or null, "width": number or null, "maxLoad": number or null } ]`,
+    scope: 'Wet Compressive Strength (length, width, max load)',
+    notes: `WET COMPRESSIVE STRENGTH ("compressive"):
+- One entry per block. length and width of the bed face in mm; maxLoad in kN.
+- Do NOT return bed area, strength or mean — these are recalculated here.`
+  },
+  absorption: {
+    jsonKey: 'absorption', table: 'absorption',
+    map: { dryWeight: 'dryWeight', wetWeight: 'wetWeight' },
+    shape: `  "absorption": [ { "dryWeight": number or null, "wetWeight": number or null } ]`,
+    scope: 'Water Absorption (dry and wet weights)',
+    notes: `WATER ABSORPTION ("absorption"):
+- One entry per block. dryWeight and wetWeight in kg (if recorded in g, divide by 1000).
+- Do NOT return the absorption % or mean.`
+  },
+  expansion: {
+    jsonKey: 'expansion', table: 'expansion',
+    map: { initialLength: 'li', initialReading1: 'i1', initialReading2: 'i2', finalReading1: 'f1', finalReading2: 'f2' },
+    shape: `  "expansion": [ { "initialLength": number or null, "initialReading1": number or null, "initialReading2": number or null, "finalReading1": number or null, "finalReading2": number or null } ]`,
+    scope: 'Linear Expansion (initial length and the dial gauge readings before and after soaking)',
+    notes: `LINEAR EXPANSION ON SATURATION ("expansion"):
+- One entry per specimen (usually A, B, C). initialLength: the longest dimension of the dried block in mm (vernier, 0.1 mm).
+- initialReading1 / initialReading2: dial gauge readings in mm on the dried block, the second after turning it 90°.
+- finalReading1 / finalReading2: dial gauge readings in mm after 24 h soaking, the second after turning it 90°.
+- If only one reading is written for a stage, give it as reading 1 and null for reading 2.
+- Do NOT return the expansion in mm or percent — these are recalculated here.`
+  },
+  weathering: {
+    jsonKey: 'weathering', table: 'weathering',
+    map: { initialMass: 'wi', finalMass: 'wf' },
+    shape: `  "weathering": [ { "initialMass": number or null, "finalMass": number or null } ]`,
+    scope: 'Weathering (initial and final oven-dry mass)',
+    notes: `WEATHERING ("weathering"):
+- One entry per specimen (usually A, B, C). initialMass: constant oven-dry mass before the cycles, in g. finalMass: constant oven-dry mass after 12 cycles, in g (if recorded in kg, multiply by 1000).
+- Do NOT return the mass loss % or average.`
+  }
+};
+
+function updateSpecimenPromptScope(){
+  const el = document.getElementById('specimenPromptScope');
+  const btn = document.getElementById('copySpecimenPromptBtn');
+  if (!el) return;
+  const sel = getSelectedTests();
+  const incl = SB_TESTS.filter(t => sel[t.key]).map(t => SB_PROMPT[t.key].scope);
+  const excl = SB_TESTS.filter(t => !sel[t.key]).map(t => t.name);
+  if (!incl.length) {
+    el.className = 'prompt-scope bad';
+    el.textContent = 'No tests ticked in section 5 — tick at least one before copying the prompt.';
+    if (btn) btn.disabled = true;
+    return;
+  }
+  el.className = 'prompt-scope';
+  el.innerHTML = `<strong>Prompt will ask for:</strong> ${incl.map(escapeHtml).join('; ')}.`
+    + (excl.length ? `<br><strong>Not included</strong> (unticked): ${excl.map(escapeHtml).join(', ')}.` : '');
+  if (btn) btn.disabled = false;
+}
+
+function getSpecimenExtractionPrompt(){
+  const sel = getSelectedTests();
+  const wanted = SB_TESTS.filter(t => sel[t.key]);
+  const notWanted = SB_TESTS.filter(t => !sel[t.key]);
+  const skipLine = notWanted.length
+    ? `\nDo NOT read ${notWanted.map(t => t.name).join(' or ')} data even if it appears on the page — do not include ${notWanted.length === 1 ? 'that key' : 'those keys'} in the output.\n`
+    : '';
+  return `You are extracting stabilized soil block test data from photo(s) of a handwritten lab log book page (a photo may be rotated — mentally rotate it the right way up before reading).
+
+Read ONLY these tests: ${wanted.map(t => t.name).join(', ')}.${skipLine}
+Return ONLY a single JSON object with exactly this shape — no other text, no markdown code fences:
+
+{
+${wanted.map(t => SB_PROMPT[t.key].shape).join(',\n')}
+}
+
+${wanted.map(t => SB_PROMPT[t.key].notes).join('\n\n')}
+
+Rules:
+- One array entry per specimen row, top-to-bottom as in the log book.
+- If a requested test is not on the page(s) at all, return an empty array for it.
+- Use null for any value you can't read confidently — never guess or invent a number.
+- Numbers must be plain JSON numbers (no units, no quotes).
+- Output must be valid JSON and nothing else.`;
+}
+
+function onCopySpecimenPrompt(){
+  const statusEl = document.getElementById('specimenJsonApplyStatus');
+  const sel = getSelectedTests();
+  if (!SB_TESTS.some(t => sel[t.key])) {
+    statusEl.textContent = 'Tick at least one test in section 5 first.';
+    statusEl.classList.add('error');
+    return;
+  }
+  copyToClipboard(getSpecimenExtractionPrompt(), () => {
+    statusEl.classList.remove('error');
+    statusEl.textContent = `Prompt copied (covers: ${SB_TESTS.filter(t => sel[t.key]).map(t => t.name).join(', ')}) — paste it into an LLM chat along with the log book photo(s).`;
+  });
+}
+
+function onApplySpecimenJson(){
+  const statusEl = document.getElementById('specimenJsonApplyStatus');
+  statusEl.classList.remove('error');
+  const raw = document.getElementById('specimenJsonInput').value.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  if (!raw) { statusEl.textContent = 'Paste the JSON returned by the LLM first.'; statusEl.classList.add('error'); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (err) { statusEl.textContent = `Invalid JSON: ${err.message}`; statusEl.classList.add('error'); return; }
+
+  const sel = getSelectedTests();
+  const done = [], skipped = [];
+  SB_TESTS.forEach(t => {
+    const p = SB_PROMPT[t.key];
+    const list = data[p.jsonKey];
+    if (!Array.isArray(list) || !list.length) return;
+    if (!sel[t.key]) { skipped.push(`${t.name} (not ticked)`); return; }
+    const table = sbTable(p.table);
+    const count = table.setCount(Math.min(list.length, MAX_SPECIMENS));
+    const rows = table.rows();
+    list.slice(0, count).forEach((s, i) => {
+      if (!rows[i] || !s) return;
+      Object.entries(p.map).forEach(([jk, cls]) => {
+        const v = s[jk];
+        if (v !== null && v !== undefined && v !== '' && !isNaN(Number(v))) rows[i].querySelector('.' + cls).value = Number(v);
+      });
+    });
+    done.push(`${t.name}: ${count} row(s)`);
+  });
+  recalcAll();
+
+  let msg = done.length ? `Filled — ${done.join('; ')}.` : 'Nothing filled — the JSON had no data for the ticked tests.';
+  if (skipped.length) msg += ` Skipped: ${skipped.join(', ')} — tick the test in section 5 and apply again if you want it.`;
+  msg += ' Check every value against the log book before generating.';
+  statusEl.textContent = msg;
+  if (!done.length) statusEl.classList.add('error');
+}
+
+/* =========================================================================
+   Wiring + init
+   ========================================================================= */
+function wireEvents(){
+  wireCommonEvents();
+  const recalcMap = {
+    dimensionBody: recalcDimensions, densityBody: recalcDensity, compressiveBody: recalcCompressive,
+    absorptionBody: recalcAbsorption, expansionBody: recalcExpansion, weatheringBody: recalcWeathering
+  };
+  Object.entries(recalcMap).forEach(([id, fn]) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', (e) => { if (e.target.tagName === 'INPUT') fn(); });
+    el.addEventListener('change', (e) => { if (e.target.type === 'checkbox') fn(); });
+  });
+  ['nominalSize', 'declaredLength', 'declaredWidth', 'declaredHeight', 'visualDefects'].forEach(id => {
+    document.getElementById(id).addEventListener('input', recalcDimensions);
+  });
+  document.getElementById('blockClass').addEventListener('change', recalcCompressive);
+  SB_TESTS.forEach(t => document.getElementById(t.checkbox).addEventListener('change', updateTestCardVisibility));
+  document.getElementById('copyPromptBtn').addEventListener('click', onCopyPrompt);
+  document.getElementById('applyJsonBtn').addEventListener('click', onApplyJson);
+  document.getElementById('copySpecimenPromptBtn').addEventListener('click', onCopySpecimenPrompt);
+  document.getElementById('applySpecimenJsonBtn').addEventListener('click', onApplySpecimenJson);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  populateMonthYear();
+  onConfigLoaded();
+  renderSignatoryFields();
+  wireEvents();
+  loadConfig();
+});
+
+/* =========================================================================
+   Document generation
+   Printed text avoids dashes and stock phrasing; it reads like the lab's
+   other certificates.
+   ========================================================================= */
+function joinWithAnd(items){
+  if (items.length <= 1) return items.join('');
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+async function buildDocx(){
+  const {
+    Document, Paragraph, TextRun, Table, TableRow, TableCell,
+    WidthType, AlignmentType, BorderStyle, VerticalAlign, LevelFormat
+  } = docx;
+
+  const FONT_SIZE = 22; // half-points; 22 = 11pt
+  const SMALL = 18;
+
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const noBorders = { top:noBorder, bottom:noBorder, left:noBorder, right:noBorder, insideHorizontal:noBorder, insideVertical:noBorder };
+  const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+  const gridBorders = { top:thinBorder, bottom:thinBorder, left:thinBorder, right:thinBorder, insideHorizontal:thinBorder, insideVertical:thinBorder };
+
+  function run(text, opts = {}){
+    return new TextRun({ text: text == null ? '' : String(text), bold: !!opts.bold, italics: !!opts.italics, size: opts.size || FONT_SIZE });
+  }
+  function cell(text, opts = {}){
+    return new TableCell({
+      width: opts.width ? { size: opts.width, type: WidthType.PERCENTAGE } : undefined,
+      verticalAlign: VerticalAlign.CENTER,
+      rowSpan: opts.rowSpan || undefined,
+      columnSpan: opts.columnSpan || undefined,
+      children: [ new Paragraph({ alignment: opts.align || AlignmentType.LEFT, children: [ run(text, opts) ] }) ]
+    });
+  }
+  const C = AlignmentType.CENTER;
+  const head = labels => new TableRow({ tableHeader: true, children: labels.map(h => cell(h, { bold: true, align: C })) });
+  const grid = rows => new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: gridBorders, rows });
+  const heading = (text, first) => new Paragraph({ spacing: { before: first ? 100 : 200, after: 100 }, children: [ run(text, { bold: true }) ] });
+  const smallNote = text => new Paragraph({ spacing: { before: 60, after: 60 }, children: [ run(text, { italics: true, size: SMALL }) ] });
+  // A data table whose last column is one merged "average" cell
+  const avgTable = (labels, rowsData, avgText) => grid([
+    head(labels),
+    ...rowsData.map((cells, i) => new TableRow({ children: [
+      ...cells.map(v => cell(v, { align: C })),
+      ...(i === 0 ? [cell(avgText, { align: C, rowSpan: rowsData.length })] : [])
+    ]}))
+  ]);
+
+  const REF_NUMBERING = 'soilblock-report-refs';
+  const NOTES_NUMBERING = 'soilblock-report-notes';
+  const sel = getSelectedTests();
+  const children = [];
+
+  // 1. Report No (left) and Date (right) on the same line
+  const reportNo = composedReportNumber();
+  const reportDateFmt = fmtDate(document.getElementById('reportDate').value);
+  children.push(new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: noBorders,
+    rows: [ new TableRow({ children: [
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [ new Paragraph({ alignment: AlignmentType.LEFT, children: [ run(reportNo, { bold: true }) ] }) ]}),
+      new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [ new Paragraph({ alignment: AlignmentType.RIGHT, children: [ run(reportDateFmt) ] }) ]})
+    ]})]
+  }));
+  children.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+
+  // 2. Addressee
+  children.push(new Paragraph({ children: [ run('To,') ], spacing: { after: 40 } }));
+  const addrLines = selectedAddress.address.split('\n').map(l => l.trim()).filter(Boolean);
+  addrLines.forEach((line, i) => {
+    children.push(new Paragraph({ children: [ run(line) ], spacing: { after: i === addrLines.length - 1 ? 200 : 0 } }));
+  });
+
+  // 3. Subject
+  const testNames = SB_TESTS.filter(t => sel[t.key]).map(t => t.name);
+  children.push(new Paragraph({
+    spacing: { after: 200 },
+    children: [ run(`Sub: ${joinWithAnd(testNames)} of Stabilized Soil Blocks - Results`, { bold: true }) ]
+  }));
+
+  // 4. References. IS 1725 is always cited; IS 3495 only for the two tests done by its methods.
+  const workDesc = document.getElementById('workDesc').value.trim();
+  const ref1 = workDesc ? workDesc : null;
+  const aeLetterRef = document.getElementById('aeLetterRef').value.trim();
+  const aeLetterDate = fmtDate(document.getElementById('aeLetterDate').value);
+  const ref2 = aeLetterRef
+    ? (aeLetterDate ? `${aeLetterRef} Letter from Assistant Engineer dated ${aeLetterDate}` : `${aeLetterRef} Letter from Assistant Engineer`)
+    : 'Not Specified';
+  const agreementNumber = document.getElementById('agreementNumber').value.trim();
+  const agreementDate = fmtDate(document.getElementById('agreementDate').value);
+  const ref3 = agreementNumber
+    ? (agreementDate ? `Agreement No ${agreementNumber} dated ${agreementDate}` : `Agreement No ${agreementNumber}`)
+    : 'Letter of request submitted to the department for testing';
+
+  const clauseParts = [];
+  if (sel.dimensions) clauseParts.push('Cl. 5.2, 7 and Annex B - Visual inspection and dimensions');
+  if (sel.density) clauseParts.push('Cl. 8.1 and Annex C - Dry density');
+  if (sel.compressive) clauseParts.push('Cl. 8.2 - Compressive strength');
+  if (sel.absorption) clauseParts.push('Cl. 8.3 - Water absorption');
+  if (sel.expansion) clauseParts.push('Cl. 8.4 and Annex D - Linear expansion on saturation');
+  if (sel.weathering) clauseParts.push('Cl. 8.5 and Annex E - Weathering');
+  const is1725Ref = `IS 1725:2023 - Stabilized soil blocks used in general building construction - Specification (${clauseParts.join('; ')})`;
+  const partParts = [];
+  if (sel.compressive) partParts.push('Part 1 : 2019 Determination of compressive strength');
+  if (sel.absorption) partParts.push('Part 2 : 2019 Determination of water absorption');
+  const is3495Ref = partParts.length ? `IS 3495 - Burnt clay building bricks - Methods of tests (${partParts.join('; ')})` : null;
+
+  const extraRefs = [document.getElementById('extraRef1').value.trim(), document.getElementById('extraRef2').value.trim()].filter(Boolean);
+  const mainRefs = [ref1, ref2, ref3].filter(Boolean);
+  const allRefs = [...mainRefs, is1725Ref, ...(is3495Ref ? [is3495Ref] : []), ...extraRefs];
+  children.push(new Paragraph({ children: [ run('Ref:') ], spacing: { after: 40 } }));
+  allRefs.forEach((ref, i) => {
+    children.push(new Paragraph({
+      numbering: { reference: REF_NUMBERING, level: 0 },
+      spacing: { after: i === allRefs.length - 1 ? 200 : 40 },
+      children: [ run(ref) ]
+    }));
+  });
+  const n1725 = mainRefs.length + 1;
+  const n3495 = is3495Ref ? mainRefs.length + 2 : null;
+  const refFor = key => (key === 'compressive' || key === 'absorption') && n3495 ? `Ref ${n1725} and ${n3495}` : `Ref ${n1725}`;
+
+  const letters = 'ABCDEF';
+  const sectionLetters = {};
+  SB_TESTS.filter(t => sel[t.key]).forEach((t, i) => { sectionLetters[t.key] = letters[i]; });
+
+  // 5. Block details table
+  const classRaw = document.getElementById('blockClass').value.trim();
+  const supplierRaw = document.getElementById('sourceSupplier').value.trim();
+  const stabilizerRaw = document.getElementById('stabilizer').value.trim();
+  const hasStarredValue = Boolean(classRaw || supplierRaw || stabilizerRaw);
+  const detailRows = [
+    new TableRow({ children: [
+      cell('Block Class', { bold: true, width: 20 }), cell(classRaw ? `${classRaw}*` : 'Not Specified', { width: 30 }),
+      cell('Nominal Size', { bold: true, width: 20 }), cell(orNotSpecified(document.getElementById('nominalSize').value), { width: 30 })
+    ]}),
+    new TableRow({ children: [
+      cell('Source / Supplier', { bold: true, width: 20 }), cell(supplierRaw ? `${supplierRaw}*` : 'Not Specified', { width: 30 }),
+      cell('Date of Testing', { bold: true, width: 20 }), cell(fmtDate(document.getElementById('testingDate').value), { width: 30 })
+    ]})
+  ];
+  if (stabilizerRaw) {
+    detailRows.push(new TableRow({ children: [
+      cell('Stabilizer', { bold: true, width: 20 }), cell(`${stabilizerRaw}*`, { width: 80, columnSpan: 3 })
+    ]}));
+  }
+  children.push(grid(detailRows));
+
+  // 6. Date of receipt
+  const RECEIPT_LINE_FONT_SIZE = FONT_SIZE - 2;
+  children.push(new Paragraph({
+    spacing: { before: 0, after: 200 },
+    children: [
+      run('Date of Receipt of Specimen: ', { bold: true, size: RECEIPT_LINE_FONT_SIZE }),
+      run(orNotSpecified(fmtDate(document.getElementById('receiptDate').value)), { size: RECEIPT_LINE_FONT_SIZE })
+    ]
+  }));
+
+  const notes = ['The results reported pertain only to the specimens submitted in the lab.'];
+  const verdict = ok => ok ? 'the sample meets this requirement' : 'the sample does not meet this requirement';
+  let first = true;
+  const sectionTitle = (key, title) => { const p = heading(`${sectionLetters[key]}. ${title} (${refFor(key)})`, first); first = false; return p; };
+
+  // 7A. Visual inspection and dimensions
+  if (sel.dimensions) {
+    const d = getDimensionData();
+    children.push(sectionTitle('dimensions', 'Visual Inspection and Dimensions'));
+    const n = d.blocks.length;
+    let visual = isNaN(d.visualDefects) ? 'Not Specified'
+      : (d.visualDefects === 0 ? `no visual defects in any of the ${n} blocks` : `${d.visualDefects} of ${n} blocks with visual defects`);
+    if (d.visualRemarks) visual += ` (${d.visualRemarks})`;
+    children.push(new Paragraph({ spacing: { after: 100 }, children: [ run(`Visual inspection: ${visual}.`, { size: 20 }) ] }));
+    const rows = [ head(['Sl No', 'Length (mm)', 'Width (mm)', 'Height (mm)']) ];
+    d.blocks.forEach((b, i) => rows.push(new TableRow({ children: [cell(i + 1, { align: C }), cell(fmtHalf(b.l), { align: C }), cell(fmtHalf(b.w), { align: C }), cell(fmtHalf(b.h), { align: C })] })));
+    rows.push(new TableRow({ children: [cell('Mean', { bold: true, align: C }), cell(fmtHalf(d.means.l), { bold: true, align: C }), cell(fmtHalf(d.means.w), { bold: true, align: C }), cell(fmtHalf(d.means.h), { bold: true, align: C })] }));
+    const req = v => isNaN(v) ? 'Not Specified' : `${v} ± ${DIM_TOL}`;
+    rows.push(new TableRow({ children: [cell('Required', { italics: true, align: C, size: SMALL }), cell(req(d.decl.l), { italics: true, align: C, size: SMALL }), cell(req(d.decl.w), { italics: true, align: C, size: SMALL }), cell(req(d.decl.h), { italics: true, align: C, size: SMALL })] }));
+    children.push(grid(rows));
+    children.push(smallNote('Each value is the mean of the readings on that block as per Annex B, to the nearest 0.5 mm.'));
+    let line = 'As per IS 1725:2023 Cl. 5.2, blocks shall be sound and free from cracks, nodules of free lime and other defects which interfere with proper placing; minor chipping from handling during delivery is not a ground for rejection. As per Cl. 7.3, the dimensions shall be within ± 2 mm.';
+    line += d.ok ? ' All blocks are within this tolerance.' : ` Outside the tolerance: ${d.failed.map(f => `Block ${f.n} (${f.fails.join(', ')})`).join('; ')}.`;
+    notes.push(line);
+  }
+
+  // 7B. Dry density
+  if (sel.density) {
+    const d = getDensityData();
+    children.push(sectionTitle('density', 'Dry Density'));
+    children.push(avgTable(
+      ['Sl No', 'Length (mm)', 'Width (mm)', 'Height (mm)', 'Dry Mass (kg)', 'Dry Density (kg/m³)', 'Average (kg/m³)'],
+      d.specs.map((s, i) => [i + 1, s.l, s.w, s.h, fx(s.mass, 3), fx(s.density, 0)]),
+      fx(d.avg, 0)));
+    children.push(smallNote('Blocks oven dried at 100 ± 5 °C to constant mass before measuring and weighing (Annex C).'));
+    notes.push(`As per IS 1725:2023 Cl. 8.1, the average dry density of three blocks shall not be less than ${DENSITY_MIN} kg/m³. Average obtained ${fx(d.avg, 0)} kg/m³, so ${verdict(d.ok)}.`);
+  }
+
+  // 7C. Wet compressive strength
+  if (sel.compressive) {
+    const d = getCompressiveData();
+    children.push(sectionTitle('compressive', 'Wet Compressive Strength'));
+    const used = d.specs.filter(s => !s.ignored).length;
+    const rows = [ head(['Sl No', 'Length (mm)', 'Width (mm)', 'Bed Area (sq.mm)', 'Max Load (kN)', 'Compressive Strength (N/mm²)', 'Mean Strength (N/mm²)']) ];
+    let meanPlaced = false;
+    d.specs.forEach((s, i) => {
+      const cells = [cell(i + 1, { align: C }), cell(s.length, { align: C }), cell(s.width, { align: C }),
+        cell(Math.round(s.bedArea), { align: C }), cell(s.load, { align: C }),
+        cell(s.ignored ? `${fx(s.strength, 1)} (ignored)` : fx(s.strength, 1), { align: C })];
+      if (s.ignored) cells.push(cell('', { align: C }));
+      else if (!meanPlaced) { cells.push(cell(fx(d.mean, 1), { align: C, rowSpan: used })); meanPlaced = true; }
+      rows.push(new TableRow({ children: cells }));
+    });
+    // An ignored row in the middle would break the merged mean cell, so list ignored rows last.
+    const ordered = [rows[0], ...rows.slice(1).filter((_, i) => !d.specs[i].ignored), ...rows.slice(1).filter((_, i) => d.specs[i].ignored)];
+    children.push(grid(ordered));
+    children.push(smallNote('Blocks tested in saturated condition after 24 h immersion in water at 27 ± 2 °C, as per IS 3495 (Part 1) : 2019.'
+      + (d.ignoredCount ? ' A block marked "ignored" did not comply individually and was replaced by two additional blocks as per IS 1725:2023 Cl. 8.2.1.2; it is not included in the mean.' : '')));
+    if (d.check) {
+      let line = `As per IS 1725:2023 Cl. 8.2, for Class ${d.check.cls.toFixed(1)} blocks the average wet compressive strength shall not be less than ${d.check.cls.toFixed(1)} N/mm², and no individual block shall be more than 15 percent below this, that is, below ${d.check.indivMin} N/mm². Average obtained ${fx(d.mean, 1)} N/mm² and lowest individual ${fx(d.minIndividual, 1)} N/mm², so ${verdict(d.check.ok)}.`;
+      notes.push(line);
+    } else if (!isNaN(d.mean)) {
+      notes.push(d.guessed !== null
+        ? `Declared class not specified. With an average wet compressive strength of ${fx(d.mean, 1)} N/mm² and a lowest individual value of ${fx(d.minIndividual, 1)} N/mm², the sample satisfies the requirements of IS 1725:2023 Cl. 8.2 for Class ${d.guessed.toFixed(1)}.`
+        : `Declared class not specified. With an average wet compressive strength of ${fx(d.mean, 1)} N/mm² and a lowest individual value of ${fx(d.minIndividual, 1)} N/mm², the sample does not satisfy the requirements of IS 1725:2023 Cl. 8.2 for the lowest class, 3.5.`);
+    }
+  }
+
+  // 7D. Water absorption
+  if (sel.absorption) {
+    const d = getAbsorptionData();
+    children.push(sectionTitle('absorption', 'Water Absorption'));
+    children.push(avgTable(
+      ['Sl No', 'Dry Weight (kg)', 'Wet Weight (kg)', 'Water Absorption (%)', 'Mean Absorption (%)'],
+      d.specs.map((s, i) => [i + 1, fx(s.dryWeight, 3), fx(s.wetWeight, 3), fx(s.absorption, 2)]),
+      fx(d.mean, 2)));
+    notes.push(`As per IS 1725:2023 Cl. 8.3, the average water absorption shall not be more than ${ABSORPTION_MAX} percent by mass. Average obtained ${fx(d.mean, 2)} percent, so ${verdict(d.ok)}.`);
+  }
+
+  // 7E. Linear expansion on saturation
+  if (sel.expansion) {
+    const d = getExpansionData();
+    children.push(sectionTitle('expansion', 'Linear Expansion on Saturation'));
+    children.push(avgTable(
+      ['Specimen', 'Initial Length (mm)', 'Mean Initial Dial Reading (mm)', 'Mean Final Dial Reading (mm)', 'Expansion (mm)', 'Expansion (%)', 'Average (%)'],
+      d.specs.map((s, i) => [String.fromCharCode(65 + i), fx(s.li, 1), fx(s.initial, 3), fx(s.final, 3), fx(s.le, 3), fx(s.pct, 2)]),
+      fx(d.avg, 2)));
+    children.push(smallNote('Blocks cured for 28 days, oven dried at 60 ± 5 °C, and soaked for 24 h. Dial readings are the mean of two readings with the block turned through 90° (Annex D).'));
+    notes.push(`As per IS 1725:2023 Cl. 8.4, the average linear expansion on saturation of three blocks shall not exceed ${EXPANSION_MAX.toFixed(2)} percent. Average obtained ${fx(d.avg, 2)} percent, so ${verdict(d.ok)}.`);
+  }
+
+  // 7F. Weathering
+  if (sel.weathering) {
+    const d = getWeatheringData();
+    children.push(sectionTitle('weathering', 'Weathering'));
+    children.push(avgTable(
+      ['Specimen', 'Initial Mass (g)', 'Final Mass after 12 Cycles (g)', 'Loss of Mass (%)', 'Average (%)'],
+      d.specs.map((s, i) => [String.fromCharCode(65 + i), s.wi, s.wf, fx(s.loss, 1)]),
+      fx(d.avg, 1)));
+    children.push(smallNote('Each cycle: 5 h soaking, 42 h drying at 70 ± 5 °C and brushing of all faces with a wire brush (Annex E).'));
+    notes.push(`As per IS 1725:2023 Cl. 8.5, the average loss of mass of three blocks after 12 cycles shall not exceed ${WEATHERING_MAX} percent. Average obtained ${fx(d.avg, 1)} percent, so ${verdict(d.ok)}.`);
+  }
+
+  if (hasStarredValue) {
+    children.push(new Paragraph({ spacing: { before: 100, after: 200 }, children: [ run('* As reported by the client via Ref 2', { italics: true, size: SMALL }) ] }));
+  }
+
+  // 9. NOTES
+  children.push(new Paragraph({ spacing: { before: 200, after: 80 }, children: [ run('NOTES:', { bold: true }) ] }));
+  notes.forEach((n, i) => {
+    children.push(new Paragraph({
+      numbering: { reference: NOTES_NUMBERING, level: 0 },
+      spacing: { after: i === notes.length - 1 ? 300 : 0 },
+      children: [ run(n, { size: SMALL }) ]
+    }));
+  });
+
+  // 10. Signatory table
+  const signatories = getSignatories();
+  if (signatories.length) {
+    const colWidth = Math.floor(100 / signatories.length);
+    const sigCells = signatories.map(sig => new TableCell({
+      width: { size: colWidth, type: WidthType.PERCENTAGE },
+      children: [
+        new Paragraph({ text: '' }), new Paragraph({ text: '' }),
+        new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(sig.role, { bold: true }) ] }),
+        ...sig.names.map(name => new Paragraph({ alignment: AlignmentType.CENTER, children: [ run(name) ] }))
+      ]
+    }));
+    children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: noBorders, rows: [ new TableRow({ children: sigCells }) ] }));
+  }
+
+  const doc = new Document({
+    styles: { default: { document: { run: { size: FONT_SIZE } } } },
+    numbering: {
+      config: [
+        { reference: REF_NUMBERING, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 360, hanging: 360 } } } }] },
+        { reference: NOTES_NUMBERING, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }
+      ]
+    },
+    sections: [{
+      properties: { page: { margin: {
+        top: Math.round(4.4 * 566.929), bottom: Math.round(3.6 * 566.929), left: 1440, right: 1440
+      } } },
+      children
+    }]
+  });
+
+  return await docx.Packer.toBlob(doc);
+}
+
+</script>
+</body>
+</html>
